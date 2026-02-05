@@ -274,6 +274,13 @@ public sealed class NodeService
             };
         }
 
+        var config = _configStore.Load();
+        if (config.CaptureNodeHostOutput && _nodeHostRunner.IsRunning)
+        {
+            progress?.Report("Stopping hidden node host...");
+            _nodeHostRunner.Stop();
+        }
+
         await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
