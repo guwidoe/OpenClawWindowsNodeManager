@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenClaw.Win.Core;
+using OpenClaw.Win.Cli;
 
 public static class Program
 {
@@ -245,60 +246,12 @@ public static class Program
 
     private static void PrintStatus(NodeStatus status)
     {
-        var state = status.ToConnectionState();
-        Console.WriteLine($"state: {state}");
-        Console.WriteLine($"installed: {status.IsInstalled}");
-        Console.WriteLine($"running: {status.IsRunning}");
-        Console.WriteLine($"connected: {status.IsConnected}");
-        if (!string.IsNullOrWhiteSpace(status.GatewayHost))
-        {
-            Console.WriteLine($"gateway: {status.GatewayHost}:{status.GatewayPort}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(status.LastError))
-        {
-            Console.WriteLine($"error: {status.LastError}");
-        }
+        Console.WriteLine(CliStatusFormatter.FormatStatus(status));
     }
 
     private static int MapExitCode(NodeStatus status)
     {
-        if (status.Issue == NodeIssue.OpenClawMissing)
-        {
-            return ExitCodes.OpenClawMissing;
-        }
-
-        if (status.Issue == NodeIssue.ConfigMissing)
-        {
-            return ExitCodes.ConfigMissing;
-        }
-
-        if (status.Issue == NodeIssue.TokenInvalid)
-        {
-            return ExitCodes.AuthTokenError;
-        }
-
-        if (status.Issue == NodeIssue.PairingRequired)
-        {
-            return ExitCodes.PairingRequired;
-        }
-
-        if (status.IsRunning && status.IsConnected)
-        {
-            return ExitCodes.Success;
-        }
-
-        if (status.IsRunning && !status.IsConnected)
-        {
-            return ExitCodes.Degraded;
-        }
-
-        if (!status.IsRunning)
-        {
-            return ExitCodes.Disconnected;
-        }
-
-        return ExitCodes.GenericFailure;
+        return CliStatusFormatter.MapExitCode(status);
     }
 
     private static Dictionary<string, string> ParseOptions(string[] args)

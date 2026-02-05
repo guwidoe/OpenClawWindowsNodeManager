@@ -5,7 +5,7 @@ using System.Text;
 
 namespace OpenClaw.Win.Core;
 
-public sealed class TokenStore
+public sealed class TokenStore : ITokenStore
 {
     public bool HasToken => File.Exists(AppPaths.TokenPath);
 

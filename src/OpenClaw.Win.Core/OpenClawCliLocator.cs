@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace OpenClaw.Win.Core;
 
-public sealed class OpenClawCliLocator
+public sealed class OpenClawCliLocator : IOpenClawCliLocator
 {
     private static readonly string[] ExecutableNames =
     {

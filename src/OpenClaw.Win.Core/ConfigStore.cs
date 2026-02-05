@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace OpenClaw.Win.Core;
 
-public sealed class ConfigStore
+public sealed class ConfigStore : IConfigStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {

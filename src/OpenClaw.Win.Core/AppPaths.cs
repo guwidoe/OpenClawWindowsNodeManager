@@ -7,11 +7,24 @@ public static class AppPaths
 {
     private const string CompanyDir = "OpenClaw";
     private const string AppDir = "WindowsCompanion";
+    private const string OverrideEnvVar = "OPENCLAW_COMPANION_STATE_DIR";
 
-    public static string BaseDir => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        CompanyDir,
-        AppDir);
+    public static string BaseDir
+    {
+        get
+        {
+            var overridePath = Environment.GetEnvironmentVariable(OverrideEnvVar);
+            if (!string.IsNullOrWhiteSpace(overridePath))
+            {
+                return overridePath;
+            }
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                CompanyDir,
+                AppDir);
+        }
+    }
 
     public static string ConfigPath => Path.Combine(BaseDir, "config.json");
     public static string TokenPath => Path.Combine(BaseDir, "token.dat");
