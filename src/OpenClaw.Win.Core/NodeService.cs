@@ -34,19 +34,42 @@ public sealed class NodeService
 
         status.IsOpenClawAvailable = true;
 
-        if (!_configStore.Exists)
+        var configExists = _configStore.Exists;
+        var config = _configStore.Load();
+        var identity = NodeIdentity.Load(config.DisplayName);
+
+        var gatewayHost = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.GatewayHost
+            : identity.GatewayHost;
+        var gatewayPort = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.GatewayPort
+            : (identity.GatewayPort ?? config.GatewayPort);
+        var gatewayUseTls = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.UseTls
+            : (identity.GatewayUseTls ?? config.UseTls);
+
+        if (!string.IsNullOrWhiteSpace(gatewayHost))
+        {
+            status.GatewayHost = gatewayHost;
+            status.GatewayPort = gatewayPort;
+        }
+
+        if (!string.IsNullOrWhiteSpace(identity.Id))
+        {
+            status.NodeId = identity.Id;
+        }
+
+        if (!string.IsNullOrWhiteSpace(identity.DisplayName))
+        {
+            status.DisplayName = identity.DisplayName;
+        }
+
+        if (!configExists && string.IsNullOrWhiteSpace(gatewayHost))
         {
             status.Issue = NodeIssue.ConfigMissing;
         }
 
-        var config = _configStore.Load();
-        if (!string.IsNullOrWhiteSpace(config.GatewayHost))
-        {
-            status.GatewayHost = config.GatewayHost;
-            status.GatewayPort = config.GatewayPort;
-        }
-
-        if (!_tokenStore.HasToken)
+        if (!_tokenStore.HasToken && status.Issue == NodeIssue.None)
         {
             status.Issue = NodeIssue.TokenMissing;
         }
@@ -57,6 +80,15 @@ public sealed class NodeService
         var json = TryExtractJson(combined);
         var parsed = NodeStatusParser.Parse(json, json == null ? combined : null);
         MergeStatus(status, parsed);
+
+        if (status.IsRunning && !status.IsConnected && !string.IsNullOrWhiteSpace(gatewayHost))
+        {
+            var connected = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
+            if (connected.HasValue)
+            {
+                status.IsConnected = connected.Value;
+            }
+        }
 
         if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
         {
@@ -208,6 +240,50 @@ public sealed class NodeService
 
         AppendNodeLog(arguments, result);
         return result;
+    }
+
+    private async Task<bool?> CheckConnectedViaGatewayAsync(string cliPath, string gatewayHost, int gatewayPort, bool gatewayUseTls, NodeIdentity identity, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(gatewayHost))
+        {
+            return null;
+        }
+
+        var url = BuildGatewayUrl(gatewayHost, gatewayPort, gatewayUseTls);
+        if (url == null)
+        {
+            return null;
+        }
+
+        var result = await RunOpenClawAsync(cliPath, $"nodes status --connected --json --url {url}", cancellationToken).ConfigureAwait(false);
+        var output = CombineOutput(result);
+
+        if (result.ExitCode != 0)
+        {
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                var lowered = output.ToLowerInvariant();
+                if (lowered.Contains("unauthorized") || lowered.Contains("token"))
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        return NodesStatusParser.ContainsNode(output, identity);
+    }
+
+    private static string? BuildGatewayUrl(string gatewayHost, int gatewayPort, bool gatewayUseTls)
+    {
+        if (string.IsNullOrWhiteSpace(gatewayHost))
+        {
+            return null;
+        }
+
+        var scheme = gatewayUseTls ? "https" : "http";
+        return $"{scheme}://{gatewayHost}:{gatewayPort}";
     }
 
     private static string BuildInstallArgs(AppConfig config)
