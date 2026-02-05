@@ -66,6 +66,16 @@ public class NodeStatusParserTests
     }
 
     [Fact]
+    public void Parse_TextHeuristics_PairingOverridesTokenError()
+    {
+        var text = "Unauthorized token. Pairing required.";
+        var status = NodeStatusParser.Parse(null, text);
+
+        Assert.Equal(NodeIssue.PairingRequired, status.Issue);
+        Assert.Equal("Authentication failed.", status.LastError);
+    }
+
+    [Fact]
     public void Parse_TextHeuristics_DetectsGatewayUnreachable()
     {
         var text = "connect failed: ENOTFOUND gateway host";
@@ -73,5 +83,25 @@ public class NodeStatusParserTests
 
         Assert.Equal(NodeIssue.GatewayUnreachable, status.Issue);
         Assert.Equal("Gateway unreachable.", status.LastError);
+    }
+
+    [Fact]
+    public void Parse_JsonWithStringValues_ParsesTypes()
+    {
+        var json = """
+                   {
+                     "running": "true",
+                     "connected": "false",
+                     "gatewayHost": "gw.local",
+                     "gatewayPort": "443"
+                   }
+                   """;
+
+        var status = NodeStatusParser.Parse(json, null);
+
+        Assert.True(status.IsRunning);
+        Assert.False(status.IsConnected);
+        Assert.Equal("gw.local", status.GatewayHost);
+        Assert.Equal(443, status.GatewayPort);
     }
 }

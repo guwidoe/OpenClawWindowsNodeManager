@@ -39,4 +39,11 @@ public class NodeStatusTests
         var status = new NodeStatus { Issue = NodeIssue.TokenMissing, IsRunning = false };
         Assert.Equal(NodeConnectionState.Disconnected, status.ToConnectionState());
     }
+
+    [Fact]
+    public void ToConnectionState_DegradedWhenTokenMissingAndRunning()
+    {
+        var status = new NodeStatus { Issue = NodeIssue.TokenMissing, IsRunning = true, IsConnected = false };
+        Assert.Equal(NodeConnectionState.Degraded, status.ToConnectionState());
+    }
 }

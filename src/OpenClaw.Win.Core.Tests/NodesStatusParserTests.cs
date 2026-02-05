@@ -31,4 +31,11 @@ public class NodesStatusParserTests
 
         Assert.False(NodesStatusParser.ContainsNode(text, identity));
     }
+
+    [Fact]
+    public void ContainsNode_ReturnsFalseForEmptyText()
+    {
+        var identity = new NodeIdentity { Id = "abc-123" };
+        Assert.False(NodesStatusParser.ContainsNode("  ", identity));
+    }
 }

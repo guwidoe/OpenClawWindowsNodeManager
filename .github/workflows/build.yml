@@ -28,6 +28,5 @@ jobs:
       - name: Build (Release)
         run: dotnet build --no-restore --configuration Release
 
-      # Tests would go here if/when added
-      # - name: Test
-      #   run: dotnet test --no-build --verbosity normal
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
