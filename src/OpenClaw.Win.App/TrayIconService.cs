@@ -11,6 +11,7 @@ namespace OpenClaw.Win.App;
 public sealed class TrayIconService : IDisposable
 {
     private readonly NotifyIcon _notifyIcon;
+    private readonly ContextMenuStrip _menu;
     private readonly ToolStripMenuItem _statusItem;
     private readonly ToolStripMenuItem _connectItem;
     private readonly ToolStripMenuItem _disconnectItem;
@@ -56,19 +57,26 @@ public sealed class TrayIconService : IDisposable
         var controlUiItem = new ToolStripMenuItem("Open Control UI", null, (_, _) => onOpenControlUi());
         var quitItem = new ToolStripMenuItem("Quit", null, (_, _) => onQuit());
 
-        var menu = new ContextMenuStrip();
-        menu.Items.Add(_statusItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(_connectItem);
-        menu.Items.Add(_disconnectItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(settingsItem);
-        menu.Items.Add(logsItem);
-        menu.Items.Add(controlUiItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(quitItem);
+        _menu = new ContextMenuStrip();
+        _menu.Items.Add(_statusItem);
+        _menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add(_connectItem);
+        _menu.Items.Add(_disconnectItem);
+        _menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add(settingsItem);
+        _menu.Items.Add(logsItem);
+        _menu.Items.Add(controlUiItem);
+        _menu.Items.Add(new ToolStripSeparator());
+        _menu.Items.Add(quitItem);
 
-        _notifyIcon.ContextMenuStrip = menu;
+        _notifyIcon.ContextMenuStrip = null;
+        _notifyIcon.MouseUp += (_, args) =>
+        {
+            if (args.Button == MouseButtons.Right)
+            {
+                _menu.Show(Cursor.Position);
+            }
+        };
         _notifyIcon.DoubleClick += async (_, _) => await onToggle();
     }
 
@@ -76,9 +84,10 @@ public sealed class TrayIconService : IDisposable
     {
         var state = status.ToConnectionState();
         _statusItem.Text = $"Status: {state}";
-        _notifyIcon.Text = status.GatewayHost == null
+        var tooltip = status.GatewayHost == null
             ? $"OpenClaw: {state}"
             : $"OpenClaw: {state} ({status.GatewayHost})";
+        SetNotifyIconText(tooltip);
 
         _connectItem.Enabled = !status.IsRunning;
         _disconnectItem.Enabled = status.IsRunning;
@@ -101,7 +110,7 @@ public sealed class TrayIconService : IDisposable
     {
         var busyState = NodeConnectionState.Connecting;
         _statusItem.Text = $"Status: {message}";
-        _notifyIcon.Text = $"OpenClaw: {message}";
+        SetNotifyIconText($"OpenClaw: {message}");
         _connectItem.Enabled = false;
         _disconnectItem.Enabled = false;
 
@@ -114,11 +123,23 @@ public sealed class TrayIconService : IDisposable
     public void Dispose()
     {
         _notifyIcon.Visible = false;
+        _menu.Dispose();
         _notifyIcon.Dispose();
         foreach (var icon in _icons.Values)
         {
             icon.Dispose();
         }
+    }
+
+    private void SetNotifyIconText(string text)
+    {
+        const int maxLength = 63;
+        if (text.Length > maxLength)
+        {
+            text = text.Substring(0, maxLength);
+        }
+
+        _notifyIcon.Text = text;
     }
 
     private static Icon CreateCircleIcon(Color color)

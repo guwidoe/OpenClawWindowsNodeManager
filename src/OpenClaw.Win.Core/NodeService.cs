@@ -125,8 +125,9 @@ public sealed class NodeService
         return status;
     }
 
-    public async Task<NodeStatus> ConnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    public async Task<NodeStatus> ConnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default, IProgress<string>? progress = null)
     {
+        progress?.Report("Checking OpenClaw status...");
         var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
         if (cliPath == null)
         {
@@ -154,17 +155,21 @@ public sealed class NodeService
         var status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         if (!status.IsInstalled)
         {
+            progress?.Report("Installing node service...");
             await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
         }
 
+        progress?.Report("Restarting node service...");
         await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(30);
-        return await WaitForConnectedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+        progress?.Report("Waiting for connection...");
+        return await WaitForConnectedAsync(waitTimeout, cancellationToken, progress).ConfigureAwait(false);
     }
 
-    public async Task<NodeStatus> DisconnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    public async Task<NodeStatus> DisconnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default, IProgress<string>? progress = null)
     {
+        progress?.Report("Stopping node service...");
         var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
         if (cliPath == null)
         {
@@ -179,8 +184,10 @@ public sealed class NodeService
         await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
-        var status = await WaitForStoppedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+        progress?.Report("Waiting for shutdown...");
+        var status = await WaitForStoppedAsync(waitTimeout, cancellationToken, progress).ConfigureAwait(false);
 
+        progress?.Report("Closing foreground node...");
         var killed = NodeProcessManager.KillForegroundNodeProcesses();
         if (killed > 0)
         {
@@ -218,7 +225,7 @@ public sealed class NodeService
         return await RunOpenClawAsync(cliPath, "node uninstall --json", cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<NodeStatus> WaitForConnectedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    private async Task<NodeStatus> WaitForConnectedAsync(TimeSpan timeout, CancellationToken cancellationToken, IProgress<string>? progress)
     {
         var start = DateTimeOffset.UtcNow;
         NodeStatus last = new();
@@ -226,6 +233,9 @@ public sealed class NodeService
         while (DateTimeOffset.UtcNow - start < timeout)
         {
             last = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+            var elapsed = (int)(DateTimeOffset.UtcNow - start).TotalSeconds;
+            var phase = last.IsRunning ? "Waiting for gateway connection" : "Waiting for node start";
+            progress?.Report($"{phase}... ({elapsed}s)");
             if (last.IsRunning && last.IsConnected)
             {
                 return last;
@@ -237,7 +247,7 @@ public sealed class NodeService
         return last;
     }
 
-    private async Task<NodeStatus> WaitForStoppedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    private async Task<NodeStatus> WaitForStoppedAsync(TimeSpan timeout, CancellationToken cancellationToken, IProgress<string>? progress)
     {
         var start = DateTimeOffset.UtcNow;
         NodeStatus last = new();
@@ -245,6 +255,8 @@ public sealed class NodeService
         while (DateTimeOffset.UtcNow - start < timeout)
         {
             last = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+            var elapsed = (int)(DateTimeOffset.UtcNow - start).TotalSeconds;
+            progress?.Report($"Waiting for node shutdown... ({elapsed}s)");
             if (!last.IsRunning)
             {
                 return last;

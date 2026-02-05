@@ -75,6 +75,11 @@ public partial class App : System.Windows.Application
             var status = await NodeService.GetStatusAsync();
             _lastStatus = status;
 
+            if (_isBusy)
+            {
+                return;
+            }
+
             _trayIcon?.UpdateStatus(status);
             _mainWindow?.UpdateStatus(status);
         }
@@ -103,12 +108,12 @@ public partial class App : System.Windows.Application
 
     public Task<NodeStatus> ConnectAsync()
     {
-        return RunWithBusyAsync("Connecting...", () => NodeService.ConnectAsync());
+        return RunWithBusyAsync("Connecting...", progress => NodeService.ConnectAsync(progress: progress));
     }
 
     public Task<NodeStatus> DisconnectAsync()
     {
-        return RunWithBusyAsync("Disconnecting...", () => NodeService.DisconnectAsync());
+        return RunWithBusyAsync("Disconnecting...", progress => NodeService.DisconnectAsync(progress: progress));
     }
 
     private Task ConnectFromTrayAsync() => ConnectAsync();
@@ -185,7 +190,7 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private async Task<NodeStatus> RunWithBusyAsync(string message, Func<Task<NodeStatus>> action)
+    private async Task<NodeStatus> RunWithBusyAsync(string message, Func<IProgress<string>, Task<NodeStatus>> action)
     {
         if (_isBusy)
         {
@@ -193,27 +198,46 @@ public partial class App : System.Windows.Application
         }
 
         _isBusy = true;
-        _trayIcon?.SetBusy(message);
-        _mainWindow?.SetBusy(true, message);
+        UpdateBusyMessage(message);
+        var progress = new Progress<string>(progressMessage =>
+        {
+            if (!string.IsNullOrWhiteSpace(progressMessage))
+            {
+                UpdateBusyMessage(progressMessage);
+            }
+        });
 
+        NodeStatus status;
         try
         {
-            var status = await action().ConfigureAwait(false);
-            _lastStatus = status;
-            _trayIcon?.UpdateStatus(status);
-            _mainWindow?.UpdateStatus(status);
-            return status;
+            status = await action(progress).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             Log.Error("Operation failed.", ex);
-            return _lastStatus ?? new NodeStatus { Issue = NodeIssue.UnknownError, LastError = ex.Message };
+            status = _lastStatus ?? new NodeStatus { Issue = NodeIssue.UnknownError, LastError = ex.Message };
         }
         finally
         {
             _isBusy = false;
             _mainWindow?.SetBusy(false, null);
         }
+
+        _lastStatus = status;
+        _trayIcon?.UpdateStatus(status);
+        _mainWindow?.UpdateStatus(status);
+        return status;
+    }
+
+    private void UpdateBusyMessage(string message)
+    {
+        if (!_isBusy)
+        {
+            return;
+        }
+
+        _trayIcon?.SetBusy(message);
+        _mainWindow?.SetBusy(true, message);
     }
 
     private void SeedConfigIfMissing()
