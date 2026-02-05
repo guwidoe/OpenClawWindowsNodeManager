@@ -156,6 +156,29 @@ public static class Program
             config.EnableTrayNotifications = false;
         }
 
+        if (options.ContainsKey("system-notifications"))
+        {
+            config.EnableSystemNotifications = true;
+        }
+
+        if (options.ContainsKey("no-system-notifications"))
+        {
+            config.EnableSystemNotifications = false;
+        }
+
+        if (options.TryGetValue("exec-policy", out var execPolicy))
+        {
+            if (TryParseExecPolicy(execPolicy, out var parsedPolicy))
+            {
+                config.ExecApprovalPolicy = parsedPolicy;
+            }
+            else
+            {
+                Console.Error.WriteLine("Invalid exec policy. Use prompt, allow, or deny.");
+                return ExitCodes.GenericFailure;
+            }
+        }
+
         configStore.Save(config);
         Console.WriteLine("Configuration saved.");
         return ExitCodes.Success;
@@ -257,7 +280,7 @@ public static class Program
         Console.WriteLine("  connect");
         Console.WriteLine("  disconnect");
         Console.WriteLine("  toggle");
-        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>] [--dark-theme|--light-theme] [--tray-notifications|--no-tray-notifications]");
+        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>] [--dark-theme|--light-theme] [--tray-notifications|--no-tray-notifications] [--system-notifications|--no-system-notifications] [--exec-policy <prompt|allow|deny>]");
         Console.WriteLine("  install");
         Console.WriteLine("  uninstall");
         Console.WriteLine("  logs --tail [--lines N]");
@@ -324,5 +347,17 @@ public static class Program
                 Thread.Sleep(500);
             }
         }
+    }
+
+    private static bool TryParseExecPolicy(string value, out ExecApprovalPolicy policy)
+    {
+        if (Enum.TryParse(value, true, out ExecApprovalPolicy parsed))
+        {
+            policy = parsed;
+            return true;
+        }
+
+        policy = ExecApprovalPolicy.Prompt;
+        return false;
     }
 }

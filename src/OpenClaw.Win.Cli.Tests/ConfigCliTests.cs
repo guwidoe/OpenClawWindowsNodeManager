@@ -12,13 +12,15 @@ public class ConfigCliTests
     public async Task Configure_SetsThemeAndNotificationFlags()
     {
         using var temp = new TempStateDir();
-        var exit = await Program.Main(new[] { "configure", "--dark-theme", "--no-tray-notifications" });
+        var exit = await Program.Main(new[] { "configure", "--dark-theme", "--no-tray-notifications", "--no-system-notifications", "--exec-policy", "deny" });
 
         Assert.Equal(ExitCodes.Success, exit);
 
         var config = new ConfigStore().Load();
         Assert.True(config.UseDarkTheme);
         Assert.False(config.EnableTrayNotifications);
+        Assert.False(config.EnableSystemNotifications);
+        Assert.Equal(ExecApprovalPolicy.Deny, config.ExecApprovalPolicy);
     }
 
     private sealed class TempStateDir : IDisposable
