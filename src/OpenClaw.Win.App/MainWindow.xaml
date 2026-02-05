@@ -7,6 +7,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760"
+        Icon="Assets/lobster.ico"
         Background="{DynamicResource WindowBackgroundBrush}">
     <Grid Margin="16" Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.RowDefinitions>
@@ -21,14 +22,21 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
-                        <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="No status yet." />
-                        <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="{DynamicResource StatusErrorBrush}" Text="" />
-                        <TextBlock x:Name="LastActionText" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="" />
-                        <StackPanel x:Name="BusyPanel" Margin="0,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
-                            <ProgressBar Width="140" Height="10" IsIndeterminate="True" Margin="0,0,8,0" />
-                            <TextBlock x:Name="BusyText" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
+                        <Image Width="36"
+                               Height="36"
+                               Margin="0,2,12,0"
+                               Stretch="Uniform"
+                               Source="pack://application:,,,/Assets/lobster.png" />
+                        <StackPanel>
+                            <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
+                            <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="No status yet." />
+                            <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="{DynamicResource StatusErrorBrush}" Text="" />
+                            <TextBlock x:Name="LastActionText" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="" />
+                            <StackPanel x:Name="BusyPanel" Margin="0,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
+                                <ProgressBar Width="140" Height="10" IsIndeterminate="True" Margin="0,0,8,0" />
+                                <TextBlock x:Name="BusyText" VerticalAlignment="Center" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">

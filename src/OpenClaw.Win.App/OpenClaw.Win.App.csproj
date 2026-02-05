@@ -15,12 +15,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\\lobster.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="personal-config.example.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\\lobster.png" />
+    <Content Include="Assets\\lobster.ico" />
+    <Content Include="Assets\\lobster.svg" />
   </ItemGroup>
 
 </Project>
