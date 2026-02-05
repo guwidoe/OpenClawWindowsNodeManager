@@ -159,6 +159,13 @@
                         <Button x:Name="StartButton" Width="120" Margin="0,0,8,0" Click="ConnectButton_Click">Start</Button>
                         <Button x:Name="StopButton" Width="120" Click="DisconnectButton_Click">Stop</Button>
                     </StackPanel>
+                    <CheckBox x:Name="CaptureNodeOutputCheckBox"
+                              Margin="0,12,0,0"
+                              Content="Hide node host window and capture output" />
+                    <TextBlock Margin="0,4,0,0"
+                               FontSize="11"
+                               Foreground="#666666"
+                               Text="Captures the node host console output to a local log file and hides the task window." />
                 </StackPanel>
             </TabItem>
 
@@ -188,6 +195,23 @@
                         <Button Width="160" Click="ExportDiagnosticsButton_Click">Export Diagnostics</Button>
                     </StackPanel>
                     <TextBlock x:Name="DiagnosticsStatus" Margin="0,8,0,0" />
+                    <GroupBox Header="Node Host Output" Margin="0,12,0,0">
+                        <StackPanel Margin="8">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="OpenNodeHostLogButton" Width="160" Margin="0,0,8,0" Click="OpenNodeHostLogButton_Click">Open Node Host Log</Button>
+                                <Button x:Name="RefreshNodeHostLogButton" Width="120" Click="RefreshNodeHostLogButton_Click">Refresh</Button>
+                            </StackPanel>
+                            <TextBox x:Name="NodeHostLogTextBox"
+                                     Height="180"
+                                     Margin="0,8,0,0"
+                                     FontFamily="Consolas"
+                                     FontSize="12"
+                                     IsReadOnly="True"
+                                     TextWrapping="NoWrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto" />
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
         </TabControl>

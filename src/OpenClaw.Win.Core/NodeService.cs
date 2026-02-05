@@ -11,6 +11,11 @@ public sealed class NodeService
 {
     private sealed record GatewayProbeResult(bool? Connected, NodeIssue? Issue, string? ErrorMessage);
     private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(30);
+    private const string NodeTaskName = "OpenClaw Node";
+    private static readonly string NodeCmdPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        ".openclaw",
+        "node.cmd");
 
     private readonly ConfigStore _configStore;
     private readonly TokenStore _tokenStore;
@@ -166,8 +171,27 @@ public sealed class NodeService
             await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
         }
 
-        progress?.Report("Restarting node service...");
-        await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+        if (config.CaptureNodeHostOutput)
+        {
+            await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!status.IsStatusCheckFailed && status.IsRunning && status.IsConnected)
+        {
+            progress?.Report("Already connected.");
+            return status;
+        }
+
+        if (!status.IsRunning)
+        {
+            progress?.Report("Starting node service...");
+            await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+        }
+        else if (!status.IsConnected)
+        {
+            progress?.Report("Restarting node service...");
+            await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+        }
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(30);
         progress?.Report("Waiting for connection...");
@@ -482,5 +506,90 @@ public sealed class NodeService
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         return redacted;
+    }
+
+    public async Task EnsureNodeHostOutputCaptureAsync(CancellationToken cancellationToken = default)
+    {
+        var config = _configStore.Load();
+        if (!config.CaptureNodeHostOutput)
+        {
+            return;
+        }
+
+        await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string EscapePowerShellString(string value)
+    {
+        return value.Replace("`", "``").Replace("\"", "`\"");
+    }
+
+    private async Task EnsureNodeHostOutputCaptureAsync(AppConfig config, CancellationToken cancellationToken)
+    {
+        if (!config.CaptureNodeHostOutput)
+        {
+            return;
+        }
+
+        if (!File.Exists(NodeCmdPath))
+        {
+            return;
+        }
+
+        if (!await IsNodeTaskInstalledAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        AppPaths.EnsureDirectories();
+
+        var wrapperPath = AppPaths.NodeHostWrapperPath;
+        var logPath = AppPaths.NodeHostLogPath;
+        var script = BuildNodeHostWrapperScript(NodeCmdPath, logPath);
+        File.WriteAllText(wrapperPath, script);
+
+        var command = $"powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \\\"{wrapperPath}\\\"";
+        var args = $"/Change /TN \"{NodeTaskName}\" /TR \"{command}\"";
+        var result = await ProcessRunner.RunAsync(
+            "schtasks",
+            args,
+            TimeSpan.FromSeconds(10),
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (result.ExitCode != 0)
+        {
+            Log.Warn($"Failed to update scheduled task for hidden node output: {result.StdErr}{result.StdOut}");
+        }
+    }
+
+    private static string BuildNodeHostWrapperScript(string nodeCmdPath, string logPath)
+    {
+        var escapedNodeCmd = EscapePowerShellString(nodeCmdPath);
+        var escapedLogPath = EscapePowerShellString(logPath);
+
+        var builder = new StringBuilder();
+        builder.AppendLine("$ErrorActionPreference = \"Stop\"");
+        builder.AppendLine($"$nodeCmd = \"{escapedNodeCmd}\"");
+        builder.AppendLine($"$logPath = \"{escapedLogPath}\"");
+        builder.AppendLine("if (!(Test-Path $nodeCmd)) { exit 1 }");
+        builder.AppendLine("New-Item -ItemType Directory -Force -Path (Split-Path $logPath) | Out-Null");
+        builder.AppendLine("$ts = Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"");
+        builder.AppendLine("Add-Content -Path $logPath -Value (\"----- node host start \" + $ts + \" -----\")");
+        builder.AppendLine("& cmd.exe /c \"call `\"$nodeCmd`\" >> `\"$logPath`\" 2>&1\"");
+        builder.AppendLine("$ts = Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"");
+        builder.AppendLine("Add-Content -Path $logPath -Value (\"----- node host exit \" + $ts + \" -----\")");
+        builder.AppendLine("exit 0");
+        return builder.ToString();
+    }
+
+    private static async Task<bool> IsNodeTaskInstalledAsync(CancellationToken cancellationToken)
+    {
+        var result = await ProcessRunner.RunAsync(
+            "schtasks",
+            $"/Query /TN \"{NodeTaskName}\"",
+            TimeSpan.FromSeconds(5),
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return result.ExitCode == 0;
     }
 }

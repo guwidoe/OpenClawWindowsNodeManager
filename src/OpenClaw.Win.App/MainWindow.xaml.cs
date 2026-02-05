@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -59,6 +60,7 @@ public partial class MainWindow : Window
     {
         LoadConfig();
         UpdateTokenStatus();
+        RefreshNodeHostLog();
         _ = ((App)WpfApplication.Current).RefreshStatusAsync();
     }
 
@@ -81,13 +83,14 @@ public partial class MainWindow : Window
         ControlUiTextBox.Text = config.ControlUiUrl;
         RelayPortTextBox.Text = config.RelayPort.ToString();
         AutoStartCheckBox.IsChecked = config.AutoStartTray;
+        CaptureNodeOutputCheckBox.IsChecked = config.CaptureNodeHostOutput;
         SshHostTextBox.Text = config.SshHost ?? string.Empty;
         SshUserTextBox.Text = config.SshUser ?? string.Empty;
         SshPortTextBox.Text = (config.SshPort == 0 ? 22 : config.SshPort).ToString();
         SshCommandTextBox.Text = string.IsNullOrWhiteSpace(config.SshCommand) ? DefaultSshCommand : config.SshCommand;
     }
 
-    private void SaveConfigButton_Click(object sender, RoutedEventArgs e)
+    private async void SaveConfigButton_Click(object sender, RoutedEventArgs e)
     {
         var app = (App)WpfApplication.Current;
         var config = app.ConfigStore.Load();
@@ -110,6 +113,7 @@ public partial class MainWindow : Window
         }
 
         config.AutoStartTray = AutoStartCheckBox.IsChecked == true;
+        config.CaptureNodeHostOutput = CaptureNodeOutputCheckBox.IsChecked == true;
         config.SshHost = string.IsNullOrWhiteSpace(SshHostTextBox.Text) ? null : SshHostTextBox.Text.Trim();
         config.SshUser = string.IsNullOrWhiteSpace(SshUserTextBox.Text) ? null : SshUserTextBox.Text.Trim();
         if (int.TryParse(SshPortTextBox.Text.Trim(), out var sshPort))
@@ -129,6 +133,11 @@ public partial class MainWindow : Window
         }
 
         UpdateTokenStatus();
+
+        if (config.CaptureNodeHostOutput)
+        {
+            await app.NodeService.EnsureNodeHostOutputCaptureAsync();
+        }
 
         WpfMessageBox.Show("Settings saved.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
     }
@@ -223,6 +232,27 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OpenNodeHostLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!File.Exists(AppPaths.NodeHostLogPath))
+        {
+            WpfMessageBox.Show("Node host log not found yet.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "notepad.exe",
+            Arguments = AppPaths.NodeHostLogPath,
+            UseShellExecute = true
+        });
+    }
+
+    private void RefreshNodeHostLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshNodeHostLog();
+    }
+
     private void OpenTokenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         MainTabs.SelectedIndex = 0;
@@ -272,6 +302,8 @@ public partial class MainWindow : Window
             StartButton.IsEnabled = !isBusy;
             StopButton.IsEnabled = !isBusy;
             FetchTokenButton.IsEnabled = !isBusy;
+            OpenNodeHostLogButton.IsEnabled = !isBusy;
+            RefreshNodeHostLogButton.IsEnabled = !isBusy;
 
             if (isBusy && !string.IsNullOrWhiteSpace(message))
             {
@@ -344,6 +376,7 @@ public partial class MainWindow : Window
                 config.ControlUiUrl,
                 config.RelayPort,
                 config.AutoStartTray,
+                config.CaptureNodeHostOutput,
                 GatewayToken = "<redacted>"
             };
 
@@ -361,6 +394,7 @@ public partial class MainWindow : Window
 
             AddLogToArchive(archive, AppPaths.AppLogPath, "app.log");
             AddLogToArchive(archive, AppPaths.NodeLogPath, "node.log");
+            AddLogToArchive(archive, AppPaths.NodeHostLogPath, "node-host.log");
         }
 
         DiagnosticsStatus.Text = $"Diagnostics exported to {zipPath}";
@@ -377,6 +411,27 @@ public partial class MainWindow : Window
         using var entryStream = entry.Open();
         using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         fileStream.CopyTo(entryStream);
+    }
+
+    private void RefreshNodeHostLog()
+    {
+        try
+        {
+            if (!File.Exists(AppPaths.NodeHostLogPath))
+            {
+                NodeHostLogTextBox.Text = "No node host output captured yet.";
+                return;
+            }
+
+            var lines = File.ReadAllLines(AppPaths.NodeHostLogPath);
+            var tail = lines.Skip(Math.Max(0, lines.Length - 200));
+            NodeHostLogTextBox.Text = string.Join(Environment.NewLine, tail);
+            NodeHostLogTextBox.ScrollToEnd();
+        }
+        catch (Exception ex)
+        {
+            NodeHostLogTextBox.Text = $"Failed to read node host log: {ex.Message}";
+        }
     }
 
     private async void FetchTokenButton_Click(object sender, RoutedEventArgs e)

@@ -13,6 +13,7 @@ public sealed class AppConfig
     public int RelayPort { get; set; } = 18792;
     public int PollIntervalSeconds { get; set; } = 5;
     public bool AutoStartTray { get; set; } = true;
+    public bool CaptureNodeHostOutput { get; set; } = true;
     public string? SshHost { get; set; }
     public string? SshUser { get; set; }
     public int SshPort { get; set; } = 22;
