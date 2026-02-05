@@ -83,11 +83,16 @@ public sealed class NodeService
 
         if (status.IsRunning && !status.IsConnected && !string.IsNullOrWhiteSpace(gatewayHost))
         {
-            var connected = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
-            if (connected.HasValue)
-            {
-                status.IsConnected = connected.Value;
-            }
+        var connected = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
+        if (connected.HasValue)
+        {
+            status.IsConnected = connected.Value;
+        }
+        else if (!_tokenStore.HasToken && status.Issue == NodeIssue.None)
+        {
+            status.Issue = NodeIssue.TokenMissing;
+            status.LastError ??= "Gateway token required to verify connection.";
+        }
         }
 
         if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
@@ -255,7 +260,8 @@ public sealed class NodeService
             return null;
         }
 
-        var result = await RunOpenClawAsync(cliPath, $"nodes status --connected --json --url {url}", cancellationToken).ConfigureAwait(false);
+        var tokenArg = BuildTokenArg();
+        var result = await RunOpenClawAsync(cliPath, $"nodes status --connected --json --url {url}{tokenArg}", cancellationToken).ConfigureAwait(false);
         var output = CombineOutput(result);
 
         if (result.ExitCode != 0)
@@ -273,6 +279,17 @@ public sealed class NodeService
         }
 
         return NodesStatusParser.ContainsNode(output, identity);
+    }
+
+    private string BuildTokenArg()
+    {
+        var token = _tokenStore.LoadToken();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return string.Empty;
+        }
+
+        return $" --token {EscapeArg(token)}";
     }
 
     private static string? BuildGatewayUrl(string gatewayHost, int gatewayPort, bool gatewayUseTls)
