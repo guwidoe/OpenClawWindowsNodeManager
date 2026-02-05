@@ -390,6 +390,7 @@ public partial class MainWindow : Window
                 config.RelayPort,
                 config.AutoStartTray,
                 config.CaptureNodeHostOutput,
+                config.UseDarkTheme,
                 GatewayToken = "<redacted>"
             };
 
