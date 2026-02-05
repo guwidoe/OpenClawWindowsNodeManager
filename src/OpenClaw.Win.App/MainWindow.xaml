@@ -1,0 +1,126 @@
+﻿<Window x:Class="OpenClaw.Win.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OpenClaw.Win.App"
+        mc:Ignorable="d"
+        Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="12" Background="#F5F5F5" CornerRadius="8" BorderBrush="#DDDDDD" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
+                    <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Text="No status yet." />
+                    <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="#B00020" Text="" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
+                    <Button x:Name="ConnectButton" Width="90" Margin="0,0,8,0" Click="ConnectButton_Click">Connect</Button>
+                    <Button x:Name="DisconnectButton" Width="90" Margin="0,0,8,0" Click="DisconnectButton_Click">Disconnect</Button>
+                    <Button x:Name="RefreshButton" Width="90" Click="RefreshButton_Click">Refresh</Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TabControl Grid.Row="1" Margin="0,16,0,0">
+            <TabItem Header="Connection">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Gateway Host" VerticalAlignment="Center" />
+                            <TextBox x:Name="GatewayHostTextBox" Grid.Row="0" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Gateway Port" VerticalAlignment="Center" />
+                            <TextBox x:Name="GatewayPortTextBox" Grid.Row="1" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Use TLS" VerticalAlignment="Center" />
+                            <CheckBox x:Name="UseTlsCheckBox" Grid.Row="2" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="TLS Fingerprint" VerticalAlignment="Center" />
+                            <TextBox x:Name="TlsFingerprintTextBox" Grid.Row="3" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Display Name" VerticalAlignment="Center" />
+                            <TextBox x:Name="DisplayNameTextBox" Grid.Row="4" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Control UI URL" VerticalAlignment="Center" />
+                            <TextBox x:Name="ControlUiTextBox" Grid.Row="5" Grid.Column="1" Margin="0,2" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Gateway Token" VerticalAlignment="Center" />
+                            <PasswordBox x:Name="GatewayTokenBox" Grid.Row="6" Grid.Column="1" Margin="0,2" />
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <CheckBox x:Name="AutoStartCheckBox" Content="Start tray app at login" Margin="0,0,12,0" />
+                            <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>
+                            <Button x:Name="TestGatewayButton" Width="140" Margin="8,0,0,0" Click="TestGatewayButton_Click">Test Gateway</Button>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Node Host">
+                <StackPanel Margin="8">
+                    <TextBlock Text="Manage the OpenClaw node host service." />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button x:Name="InstallButton" Width="120" Margin="0,0,8,0" Click="InstallButton_Click">Install</Button>
+                        <Button x:Name="UninstallButton" Width="120" Margin="0,0,8,0" Click="UninstallButton_Click">Uninstall</Button>
+                        <Button x:Name="StartButton" Width="120" Margin="0,0,8,0" Click="ConnectButton_Click">Start</Button>
+                        <Button x:Name="StopButton" Width="120" Click="DisconnectButton_Click">Stop</Button>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Chrome Relay">
+                <StackPanel Margin="8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Relay Port" VerticalAlignment="Center" />
+                        <TextBox x:Name="RelayPortTextBox" Grid.Column="1" Margin="0,2" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Width="160" Margin="0,0,8,0" Click="OpenExtensionsButton_Click">Open chrome://extensions</Button>
+                        <Button Width="170" Margin="0,0,8,0" Click="VerifyRelayButton_Click">Verify Relay</Button>
+                        <Button Width="140" Click="OpenRelayFolderButton_Click">Open Extension Folder</Button>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Logs">
+                <StackPanel Margin="8">
+                    <TextBlock Text="App logs and node host logs are stored locally." Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Width="140" Margin="0,0,8,0" Click="OpenLogsButton_Click">Open Logs Folder</Button>
+                        <Button Width="160" Click="ExportDiagnosticsButton_Click">Export Diagnostics</Button>
+                    </StackPanel>
+                    <TextBlock x:Name="DiagnosticsStatus" Margin="0,8,0,0" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

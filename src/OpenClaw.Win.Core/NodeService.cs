@@ -1,0 +1,314 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace OpenClaw.Win.Core;
+
+public sealed class NodeService
+{
+    private readonly ConfigStore _configStore;
+    private readonly TokenStore _tokenStore;
+    private readonly OpenClawCliLocator _cliLocator;
+
+    public NodeService(ConfigStore configStore, TokenStore tokenStore, OpenClawCliLocator cliLocator)
+    {
+        _configStore = configStore;
+        _tokenStore = tokenStore;
+        _cliLocator = cliLocator;
+    }
+
+    public async Task<NodeStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var status = new NodeStatus();
+        var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
+        if (cliPath == null)
+        {
+            status.IsOpenClawAvailable = false;
+            status.Issue = NodeIssue.OpenClawMissing;
+            status.LastError = "openclaw CLI not found.";
+            return status;
+        }
+
+        status.IsOpenClawAvailable = true;
+
+        if (!_configStore.Exists)
+        {
+            status.Issue = NodeIssue.ConfigMissing;
+        }
+
+        var config = _configStore.Load();
+        if (!string.IsNullOrWhiteSpace(config.GatewayHost))
+        {
+            status.GatewayHost = config.GatewayHost;
+            status.GatewayPort = config.GatewayPort;
+        }
+
+        if (!_tokenStore.HasToken)
+        {
+            status.Issue = NodeIssue.TokenMissing;
+        }
+
+        var result = await RunOpenClawAsync(cliPath, "node status --json", cancellationToken).ConfigureAwait(false);
+        var combined = CombineOutput(result);
+
+        var json = TryExtractJson(combined);
+        var parsed = NodeStatusParser.Parse(json, json == null ? combined : null);
+        MergeStatus(status, parsed);
+
+        if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
+        {
+            status.Issue = NodeIssue.UnknownError;
+            status.LastError ??= string.IsNullOrWhiteSpace(result.StdErr) ? "openclaw status failed." : result.StdErr.Trim();
+        }
+
+        return status;
+    }
+
+    public async Task<NodeStatus> ConnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    {
+        var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
+        if (cliPath == null)
+        {
+            return new NodeStatus
+            {
+                IsOpenClawAvailable = false,
+                Issue = NodeIssue.OpenClawMissing,
+                LastError = "openclaw CLI not found."
+            };
+        }
+
+        if (!_configStore.Exists)
+        {
+            return new NodeStatus
+            {
+                IsOpenClawAvailable = true,
+                Issue = NodeIssue.ConfigMissing,
+                LastError = "Config missing."
+            };
+        }
+
+        var config = _configStore.Load();
+        var installArgs = BuildInstallArgs(config);
+
+        var status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+        if (!status.IsInstalled)
+        {
+            await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
+        }
+
+        await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+
+        var waitTimeout = timeout ?? TimeSpan.FromSeconds(30);
+        return await WaitForConnectedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<NodeStatus> DisconnectAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    {
+        var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
+        if (cliPath == null)
+        {
+            return new NodeStatus
+            {
+                IsOpenClawAvailable = false,
+                Issue = NodeIssue.OpenClawMissing,
+                LastError = "openclaw CLI not found."
+            };
+        }
+
+        await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+
+        var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
+        return await WaitForStoppedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<ProcessResult> InstallAsync(CancellationToken cancellationToken = default)
+    {
+        var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
+        if (cliPath == null)
+        {
+            throw new InvalidOperationException("openclaw CLI not found.");
+        }
+
+        if (!_configStore.Exists)
+        {
+            throw new InvalidOperationException("Config missing.");
+        }
+
+        var config = _configStore.Load();
+        return await RunOpenClawAsync(cliPath, BuildInstallArgs(config), cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<ProcessResult> UninstallAsync(CancellationToken cancellationToken = default)
+    {
+        var cliPath = await _cliLocator.FindAsync().ConfigureAwait(false);
+        if (cliPath == null)
+        {
+            throw new InvalidOperationException("openclaw CLI not found.");
+        }
+
+        return await RunOpenClawAsync(cliPath, "node uninstall --json", cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<NodeStatus> WaitForConnectedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var start = DateTimeOffset.UtcNow;
+        NodeStatus last = new();
+
+        while (DateTimeOffset.UtcNow - start < timeout)
+        {
+            last = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+            if (last.IsRunning && last.IsConnected)
+            {
+                return last;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        }
+
+        return last;
+    }
+
+    private async Task<NodeStatus> WaitForStoppedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var start = DateTimeOffset.UtcNow;
+        NodeStatus last = new();
+
+        while (DateTimeOffset.UtcNow - start < timeout)
+        {
+            last = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
+            if (!last.IsRunning)
+            {
+                return last;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        }
+
+        return last;
+    }
+
+    private async Task<ProcessResult> RunOpenClawAsync(string cliPath, string arguments, CancellationToken cancellationToken)
+    {
+        var env = new Dictionary<string, string?>();
+        var token = _tokenStore.LoadToken();
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            env["OPENCLAW_GATEWAY_TOKEN"] = token;
+        }
+
+        var result = await ProcessRunner.RunAsync(
+            cliPath,
+            arguments,
+            TimeSpan.FromSeconds(15),
+            environment: env,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        AppendNodeLog(arguments, result);
+        return result;
+    }
+
+    private static string BuildInstallArgs(AppConfig config)
+    {
+        var builder = new StringBuilder("node install");
+        builder.Append(" --host ").Append(EscapeArg(config.GatewayHost));
+        builder.Append(" --port ").Append(config.GatewayPort);
+
+        if (config.UseTls)
+        {
+            builder.Append(" --tls");
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.TlsFingerprint))
+        {
+            builder.Append(" --tls-fingerprint ").Append(EscapeArg(config.TlsFingerprint));
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.DisplayName))
+        {
+            builder.Append(" --display-name ").Append(EscapeArg(config.DisplayName));
+        }
+
+        builder.Append(" --force");
+        return builder.ToString();
+    }
+
+    private static string EscapeArg(string value)
+    {
+        return value.Contains(' ') ? $"\"{value}\"" : value;
+    }
+
+    private static string CombineOutput(ProcessResult result)
+    {
+        if (!string.IsNullOrWhiteSpace(result.StdOut))
+        {
+            return result.StdOut;
+        }
+
+        return result.StdErr;
+    }
+
+    private static string? TryExtractJson(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+        {
+            return trimmed;
+        }
+
+        var firstBrace = trimmed.IndexOf('{');
+        var lastBrace = trimmed.LastIndexOf('}');
+        if (firstBrace >= 0 && lastBrace > firstBrace)
+        {
+            return trimmed.Substring(firstBrace, lastBrace - firstBrace + 1);
+        }
+
+        return null;
+    }
+
+    private static void MergeStatus(NodeStatus target, NodeStatus parsed)
+    {
+        target.IsInstalled = target.IsInstalled || parsed.IsInstalled;
+        target.IsRunning = parsed.IsRunning;
+        target.IsConnected = parsed.IsConnected;
+        target.GatewayHost ??= parsed.GatewayHost;
+        target.GatewayPort ??= parsed.GatewayPort;
+        target.NodeId ??= parsed.NodeId;
+        target.DisplayName ??= parsed.DisplayName;
+        target.LastConnectedAt ??= parsed.LastConnectedAt;
+        target.LastError ??= parsed.LastError;
+
+        if (target.Issue == NodeIssue.None && parsed.Issue != NodeIssue.None)
+        {
+            target.Issue = parsed.Issue;
+        }
+    }
+
+    private static void AppendNodeLog(string arguments, ProcessResult result)
+    {
+        AppPaths.EnsureDirectories();
+        var builder = new StringBuilder();
+        builder.AppendLine($"[{DateTimeOffset.Now:O}] openclaw {arguments}");
+        if (!string.IsNullOrWhiteSpace(result.StdOut))
+        {
+            builder.AppendLine(result.StdOut.TrimEnd());
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.StdErr))
+        {
+            builder.AppendLine(result.StdErr.TrimEnd());
+        }
+
+        builder.AppendLine($"exit={result.ExitCode} timeout={result.TimedOut}");
+        builder.AppendLine(new string('-', 64));
+
+        File.AppendAllText(AppPaths.NodeLogPath, builder.ToString());
+    }
+}
