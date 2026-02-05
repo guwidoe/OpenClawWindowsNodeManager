@@ -10,6 +10,12 @@ namespace OpenClaw.Win.Core;
 public sealed class NodeService
 {
     private sealed record GatewayProbeResult(bool? Connected, NodeIssue? Issue, string? ErrorMessage);
+    private sealed record NodeRunSettings(
+        string Host,
+        int Port,
+        bool UseTls,
+        string? TlsFingerprint,
+        string DisplayName);
     private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(30);
     private System.Diagnostics.Process? _hiddenNodeProcess;
     private readonly object _processLock = new();
@@ -200,7 +206,18 @@ public sealed class NodeService
                 }
 
                 progress?.Report("Starting node host (hidden)...");
-                var started = StartHiddenNodeHost(cliPath, config);
+                var runSettings = ResolveRunSettings(config);
+                if (runSettings == null)
+                {
+                    return new NodeStatus
+                    {
+                        IsOpenClawAvailable = true,
+                        Issue = NodeIssue.ConfigMissing,
+                        LastError = "Gateway host is not configured."
+                    };
+                }
+
+                var started = StartHiddenNodeHost(cliPath, runSettings);
                 if (!started)
                 {
                     return new NodeStatus
@@ -576,11 +593,11 @@ public sealed class NodeService
         }
     }
 
-    private bool StartHiddenNodeHost(string cliPath, AppConfig config)
+    private bool StartHiddenNodeHost(string cliPath, NodeRunSettings settings)
     {
         try
         {
-            var runArgs = BuildRunArgs(config);
+            var runArgs = BuildRunArgs(settings);
             var openclawMjs = ResolveOpenClawMjsPath(cliPath);
             var (fileName, arguments) = openclawMjs == null
                 ? BuildCliInvocation(cliPath, runArgs)
@@ -763,22 +780,49 @@ public sealed class NodeService
         return null;
     }
 
-    private static string BuildRunArgs(AppConfig config)
+    private static NodeRunSettings? ResolveRunSettings(AppConfig config)
+    {
+        var identity = NodeIdentity.Load(config.DisplayName);
+        var host = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.GatewayHost
+            : identity.GatewayHost;
+
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return null;
+        }
+
+        var port = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.GatewayPort
+            : (identity.GatewayPort ?? config.GatewayPort);
+
+        var useTls = !string.IsNullOrWhiteSpace(config.GatewayHost)
+            ? config.UseTls
+            : (identity.GatewayUseTls ?? config.UseTls);
+
+        var displayName = !string.IsNullOrWhiteSpace(config.DisplayName)
+            ? config.DisplayName
+            : (identity.DisplayName ?? Environment.MachineName);
+
+        return new NodeRunSettings(host, port, useTls, config.TlsFingerprint, displayName);
+    }
+
+    private static string BuildRunArgs(NodeRunSettings settings)
     {
         var builder = new StringBuilder("node run");
-        builder.Append(" --host ").Append(EscapeArg(config.GatewayHost));
-        builder.Append(" --port ").Append(config.GatewayPort);
-        if (config.UseTls)
+        builder.Append(" --host ").Append(EscapeArg(settings.Host));
+        builder.Append(" --port ").Append(settings.Port);
+        if (settings.UseTls)
         {
             builder.Append(" --tls");
         }
-        if (!string.IsNullOrWhiteSpace(config.TlsFingerprint))
+        if (!string.IsNullOrWhiteSpace(settings.TlsFingerprint))
         {
-            builder.Append(" --tls-fingerprint ").Append(EscapeArg(config.TlsFingerprint));
+            builder.Append(" --tls-fingerprint ").Append(EscapeArg(settings.TlsFingerprint));
         }
-        if (!string.IsNullOrWhiteSpace(config.DisplayName))
+        if (!string.IsNullOrWhiteSpace(settings.DisplayName))
         {
-            builder.Append(" --display-name ").Append(EscapeArg(config.DisplayName));
+            builder.Append(" --display-name ").Append(EscapeArg(settings.DisplayName));
         }
         return builder.ToString();
     }
