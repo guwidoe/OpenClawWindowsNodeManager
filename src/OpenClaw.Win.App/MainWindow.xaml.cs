@@ -25,6 +25,12 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        ThemeManager.ApplyTitleBar(this, ((App)WpfApplication.Current).ConfigStore.Load().ThemePreference);
+    }
+
     public void UpdateStatus(NodeStatus status)
     {
         Dispatcher.Invoke(() =>

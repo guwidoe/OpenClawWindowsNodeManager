@@ -38,6 +38,13 @@ public static class ThemeManager
         ApplyTitleBarTheme(useDarkTheme);
     }
 
+    public static void ApplyTitleBar(Window window, ThemePreference preference)
+    {
+        var systemIsLight = GetSystemAppsUseLightTheme();
+        var useDarkTheme = ThemePreferenceResolver.Resolve(preference, systemIsLight);
+        WindowThemeHelper.ApplyTitleBar(window, useDarkTheme);
+    }
+
     private static bool? GetSystemAppsUseLightTheme()
     {
         try
