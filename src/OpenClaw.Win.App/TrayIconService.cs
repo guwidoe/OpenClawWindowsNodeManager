@@ -12,6 +12,7 @@ public sealed class TrayIconService : IDisposable
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _menu;
+    private readonly TrayMenuDismissFilter _menuDismissFilter;
     private readonly ToolStripMenuItem _statusItem;
     private readonly ToolStripMenuItem _connectItem;
     private readonly ToolStripMenuItem _disconnectItem;
@@ -61,6 +62,7 @@ public sealed class TrayIconService : IDisposable
         var quitItem = new ToolStripMenuItem("Quit", null, (_, _) => onQuit());
 
         _menu = new ContextMenuStrip();
+        _menu.AutoClose = true;
         _menu.Items.Add(_statusItem);
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(_connectItem);
@@ -71,6 +73,10 @@ public sealed class TrayIconService : IDisposable
         _menu.Items.Add(controlUiItem);
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(quitItem);
+
+        _menuDismissFilter = new TrayMenuDismissFilter(_menu);
+        _menu.Opened += (_, _) => Application.AddMessageFilter(_menuDismissFilter);
+        _menu.Closed += (_, _) => Application.RemoveMessageFilter(_menuDismissFilter);
 
         _notifyIcon.ContextMenuStrip = null;
         _notifyIcon.MouseUp += (_, args) =>
@@ -132,6 +138,7 @@ public sealed class TrayIconService : IDisposable
     public void Dispose()
     {
         _notifyIcon.Visible = false;
+        Application.RemoveMessageFilter(_menuDismissFilter);
         _menu.Dispose();
         _notifyIcon.Dispose();
         foreach (var icon in _icons.Values)
@@ -183,4 +190,37 @@ public sealed class TrayIconService : IDisposable
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool DestroyIcon(IntPtr handle);
+
+    private sealed class TrayMenuDismissFilter : IMessageFilter
+    {
+        private readonly ContextMenuStrip _menu;
+
+        public TrayMenuDismissFilter(ContextMenuStrip menu)
+        {
+            _menu = menu;
+        }
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            if (!_menu.Visible)
+            {
+                return false;
+            }
+
+            const int WM_LBUTTONDOWN = 0x0201;
+            const int WM_RBUTTONDOWN = 0x0204;
+            const int WM_MBUTTONDOWN = 0x0207;
+
+            if (m.Msg is WM_LBUTTONDOWN or WM_RBUTTONDOWN or WM_MBUTTONDOWN)
+            {
+                var position = Control.MousePosition;
+                if (!_menu.Bounds.Contains(position))
+                {
+                    _menu.Close(ToolStripDropDownCloseReason.AppClicked);
+                }
+            }
+
+            return false;
+        }
+    }
 }
