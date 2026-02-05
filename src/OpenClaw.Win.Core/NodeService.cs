@@ -182,55 +182,61 @@ public sealed class NodeService
             await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
         }
 
-        if (!status.IsStatusCheckFailed && status.IsRunning && status.IsConnected)
-        {
-            progress?.Report("Already connected.");
-            return status;
-        }
-
         if (config.CaptureNodeHostOutput)
         {
             await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
 
-            if (IsHiddenProcessRunning())
+            var hiddenRunning = IsHiddenProcessRunning();
+            if (hiddenRunning && !status.IsStatusCheckFailed && status.IsRunning && status.IsConnected)
             {
-                progress?.Report("Node host already running (hidden).");
+                progress?.Report("Already connected (hidden).");
+                return status;
             }
-            else
+
+            var runSettings = ResolveRunSettings(config);
+            if (runSettings == null)
             {
-                if (status.HasForegroundProcess)
+                return new NodeStatus
                 {
-                    progress?.Report("Stopping visible node host...");
-                    await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
-                    NodeProcessManager.KillForegroundNodeProcesses();
-                }
+                    IsOpenClawAvailable = true,
+                    Issue = NodeIssue.ConfigMissing,
+                    LastError = "Gateway host is not configured."
+                };
+            }
 
-                progress?.Report("Starting node host (hidden)...");
-                var runSettings = ResolveRunSettings(config);
-                if (runSettings == null)
-                {
-                    return new NodeStatus
-                    {
-                        IsOpenClawAvailable = true,
-                        Issue = NodeIssue.ConfigMissing,
-                        LastError = "Gateway host is not configured."
-                    };
-                }
+            if (hiddenRunning)
+            {
+                progress?.Report("Restarting hidden node host...");
+                StopHiddenNodeHost();
+            }
 
-                var started = StartHiddenNodeHost(cliPath, runSettings);
-                if (!started)
+            if (status.IsRunning || status.HasForegroundProcess)
+            {
+                progress?.Report("Stopping existing node host...");
+                await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+                NodeProcessManager.KillForegroundNodeProcesses();
+            }
+
+            progress?.Report("Starting node host (hidden)...");
+            var started = StartHiddenNodeHost(cliPath, runSettings);
+            if (!started)
+            {
+                return new NodeStatus
                 {
-                    return new NodeStatus
-                    {
-                        IsOpenClawAvailable = true,
-                        Issue = NodeIssue.UnknownError,
-                        LastError = "Failed to start hidden node host."
-                    };
-                }
+                    IsOpenClawAvailable = true,
+                    Issue = NodeIssue.UnknownError,
+                    LastError = "Failed to start hidden node host."
+                };
             }
         }
         else
         {
+            if (!status.IsStatusCheckFailed && status.IsRunning && status.IsConnected)
+            {
+                progress?.Report("Already connected.");
+                return status;
+            }
+
             if (!status.IsRunning)
             {
                 progress?.Report("Starting node service...");
