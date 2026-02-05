@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using WpfMessageBox = System.Windows.MessageBox;
 using System.Windows.Threading;
 using OpenClaw.Win.Core;
+using WpfMessageBox = System.Windows.MessageBox;
 
 namespace OpenClaw.Win.App;
 
@@ -34,6 +35,8 @@ public partial class App : System.Windows.Application
         NodeService = new NodeService(ConfigStore, TokenStore, CliLocator);
         GatewayTester = new GatewayTester();
         ChromeRelayService = new ChromeRelayService();
+
+        SeedConfigIfMissing();
 
         _mainWindow = new MainWindow();
         _mainWindow.Hide();
@@ -178,6 +181,31 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             Log.Error("Failed to open control UI.", ex);
+        }
+    }
+
+    private void SeedConfigIfMissing()
+    {
+        try
+        {
+            if (File.Exists(AppPaths.ConfigPath))
+            {
+                return;
+            }
+
+            var seedPath = Path.Combine(AppContext.BaseDirectory, "personal-config.json");
+            if (!File.Exists(seedPath))
+            {
+                return;
+            }
+
+            AppPaths.EnsureDirectories();
+            File.Copy(seedPath, AppPaths.ConfigPath, overwrite: false);
+            Log.Info($"Seeded config from {seedPath}.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to seed config.", ex);
         }
     }
 }
