@@ -106,6 +106,11 @@ public sealed class NodeService
             status.IsStatusCheckFailed = true;
             status.LastError ??= "Status check timed out.";
         }
+        else if (result.ExitCode != 0 && !HasMeaningfulStatus(parsed))
+        {
+            status.IsStatusCheckFailed = true;
+            status.LastError ??= string.IsNullOrWhiteSpace(result.StdErr) ? "Status check failed." : result.StdErr.Trim();
+        }
 
         var foregroundIds = _nodeProcessManager.FindForegroundNodeProcessIds();
         if (foregroundIds.Count > 0)
@@ -138,13 +143,13 @@ public sealed class NodeService
             }
         }
 
-        if (!status.IsRunning && (status.Issue == NodeIssue.PairingRequired || status.Issue == NodeIssue.TokenInvalid))
+        if (!status.IsRunning && result.ExitCode == 0 && (status.Issue == NodeIssue.PairingRequired || status.Issue == NodeIssue.TokenInvalid))
         {
             status.Issue = NodeIssue.None;
             status.LastError = null;
         }
 
-        if (result.ExitCode != 0 && status.Issue == NodeIssue.None && !result.TimedOut)
+        if (result.ExitCode != 0 && status.Issue == NodeIssue.None && !result.TimedOut && !status.IsStatusCheckFailed)
         {
             status.Issue = NodeIssue.UnknownError;
             status.LastError ??= string.IsNullOrWhiteSpace(result.StdErr) ? "openclaw status failed." : result.StdErr.Trim();
@@ -635,5 +640,17 @@ public sealed class NodeService
     {
         _ = settings;
         return "node run";
+    }
+
+    private static bool HasMeaningfulStatus(NodeStatus status)
+    {
+        return status.IsInstalled
+               || status.IsRunning
+               || status.IsConnected
+               || status.Issue != NodeIssue.None
+               || status.LastConnectedAt.HasValue
+               || !string.IsNullOrWhiteSpace(status.NodeId)
+               || !string.IsNullOrWhiteSpace(status.DisplayName)
+               || !string.IsNullOrWhiteSpace(status.GatewayHost);
     }
 }

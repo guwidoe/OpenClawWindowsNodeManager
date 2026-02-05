@@ -152,4 +152,65 @@ public class NodeServiceTests
 
         Assert.Equal(1, nodeHostRunner.StopCalls);
     }
+
+    [Fact]
+    public async Task GetStatusAsync_FailedStatusCheck_IsMarkedTransient()
+    {
+        using var temp = new TempStateDir();
+        var configStore = new FakeConfigStore
+        {
+            Config = new AppConfig { GatewayHost = "gw.local" }
+        };
+
+        var tokenStore = new FakeTokenStore { Token = "token" };
+        var processRunner = new FakeProcessRunner();
+        processRunner.Results["node status --json"] = new ProcessResult
+        {
+            ExitCode = 1,
+            StdErr = "boom"
+        };
+
+        var service = new NodeService(
+            configStore,
+            tokenStore,
+            new FakeCliLocator(),
+            processRunner,
+            new FakeNodeProcessManager(),
+            new FakeNodeHostRunner());
+
+        var status = await service.GetStatusAsync();
+
+        Assert.True(status.IsStatusCheckFailed);
+        Assert.Equal(NodeIssue.None, status.Issue);
+    }
+
+    [Fact]
+    public async Task GetStatusAsync_ErrorOutputStillSurfacesIssues()
+    {
+        using var temp = new TempStateDir();
+        var configStore = new FakeConfigStore
+        {
+            Config = new AppConfig { GatewayHost = "gw.local" }
+        };
+
+        var processRunner = new FakeProcessRunner();
+        processRunner.Results["node status --json"] = new ProcessResult
+        {
+            ExitCode = 1,
+            StdErr = "token invalid"
+        };
+
+        var service = new NodeService(
+            configStore,
+            new FakeTokenStore { Token = "token" },
+            new FakeCliLocator(),
+            processRunner,
+            new FakeNodeProcessManager(),
+            new FakeNodeHostRunner());
+
+        var status = await service.GetStatusAsync();
+
+        Assert.False(status.IsStatusCheckFailed);
+        Assert.Equal(NodeIssue.TokenInvalid, status.Issue);
+    }
 }
