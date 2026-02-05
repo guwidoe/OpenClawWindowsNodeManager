@@ -109,6 +109,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <CheckBox x:Name="AutoStartCheckBox" Content="Start tray app at login" Margin="0,0,12,0" />
                             <CheckBox x:Name="ThemeCheckBox" Content="Use dark theme" Margin="0,0,12,0" />
+                            <CheckBox x:Name="TrayNotificationsCheckBox" Content="Show tray notifications" Margin="0,0,12,0" />
                             <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>
                             <Button x:Name="TestGatewayButton" Width="140" Margin="8,0,0,0" Click="TestGatewayButton_Click">Test Gateway</Button>
                         </StackPanel>

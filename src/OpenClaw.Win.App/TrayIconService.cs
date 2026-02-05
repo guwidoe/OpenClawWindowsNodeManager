@@ -23,6 +23,7 @@ public sealed class TrayIconService : IDisposable
     private DateTimeOffset _lastNotificationAt = DateTimeOffset.MinValue;
     private readonly TimeSpan _notificationCooldown = TimeSpan.FromSeconds(30);
     private bool _isBusy;
+    private bool _notificationsEnabled = true;
 
     public TrayIconService(
         Func<Task> onConnect,
@@ -154,6 +155,11 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
+    public void SetNotificationsEnabled(bool enabled)
+    {
+        _notificationsEnabled = enabled;
+    }
+
     public void Dispose()
     {
         _notifyIcon.Visible = false;
@@ -179,6 +185,11 @@ public sealed class TrayIconService : IDisposable
 
     private bool ShouldNotify(NodeConnectionState state)
     {
+        if (!_notificationsEnabled)
+        {
+            return false;
+        }
+
         var now = DateTimeOffset.UtcNow;
         if (now - _lastNotificationAt < _notificationCooldown)
         {

@@ -58,6 +58,7 @@ public partial class App : System.Windows.Application
             onOpenLogs: OpenLogsFolder,
             onOpenControlUi: OpenControlUi,
             onQuit: Shutdown);
+        _trayIcon.SetNotificationsEnabled(config.EnableTrayNotifications);
 
         StartPolling(config.PollIntervalSeconds);
     }
@@ -261,6 +262,11 @@ public partial class App : System.Windows.Application
 
         _trayIcon?.SetBusy(detail);
         _mainWindow?.SetBusy(true, title, detail);
+    }
+
+    public void UpdateTrayNotifications(bool enabled)
+    {
+        _trayIcon?.SetNotificationsEnabled(enabled);
     }
 
     private string FormatBusyDetail(string message, int step)

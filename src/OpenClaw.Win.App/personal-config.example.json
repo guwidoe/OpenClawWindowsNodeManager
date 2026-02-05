@@ -8,5 +8,6 @@
   "pollIntervalSeconds": 5,
   "autoStartTray": true,
   "captureNodeHostOutput": true,
-  "useDarkTheme": false
+  "useDarkTheme": false,
+  "enableTrayNotifications": true
 }

@@ -15,6 +15,7 @@ public sealed class AppConfig
     public bool AutoStartTray { get; set; } = true;
     public bool CaptureNodeHostOutput { get; set; } = true;
     public bool UseDarkTheme { get; set; } = false;
+    public bool EnableTrayNotifications { get; set; } = true;
     public string? SshHost { get; set; }
     public string? SshUser { get; set; }
     public int SshPort { get; set; } = 22;

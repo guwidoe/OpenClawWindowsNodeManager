@@ -85,6 +85,7 @@ public partial class MainWindow : Window
         AutoStartCheckBox.IsChecked = config.AutoStartTray;
         CaptureNodeOutputCheckBox.IsChecked = config.CaptureNodeHostOutput;
         ThemeCheckBox.IsChecked = config.UseDarkTheme;
+        TrayNotificationsCheckBox.IsChecked = config.EnableTrayNotifications;
         SshHostTextBox.Text = config.SshHost ?? string.Empty;
         SshUserTextBox.Text = config.SshUser ?? string.Empty;
         SshPortTextBox.Text = (config.SshPort == 0 ? 22 : config.SshPort).ToString();
@@ -116,6 +117,7 @@ public partial class MainWindow : Window
         config.AutoStartTray = AutoStartCheckBox.IsChecked == true;
         config.CaptureNodeHostOutput = CaptureNodeOutputCheckBox.IsChecked == true;
         config.UseDarkTheme = ThemeCheckBox.IsChecked == true;
+        config.EnableTrayNotifications = TrayNotificationsCheckBox.IsChecked == true;
         config.SshHost = string.IsNullOrWhiteSpace(SshHostTextBox.Text) ? null : SshHostTextBox.Text.Trim();
         config.SshUser = string.IsNullOrWhiteSpace(SshUserTextBox.Text) ? null : SshUserTextBox.Text.Trim();
         if (int.TryParse(SshPortTextBox.Text.Trim(), out var sshPort))
@@ -128,6 +130,7 @@ public partial class MainWindow : Window
         app.ConfigStore.Save(config);
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
         ThemeManager.ApplyTheme(config.UseDarkTheme);
+        app.UpdateTrayNotifications(config.EnableTrayNotifications);
 
         if (!string.IsNullOrWhiteSpace(GatewayTokenBox.Password))
         {
@@ -391,6 +394,7 @@ public partial class MainWindow : Window
                 config.AutoStartTray,
                 config.CaptureNodeHostOutput,
                 config.UseDarkTheme,
+                config.EnableTrayNotifications,
                 GatewayToken = "<redacted>"
             };
 
