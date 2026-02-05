@@ -123,6 +123,7 @@
                             <CheckBox x:Name="AutoStartCheckBox" Content="Start tray app at login" Margin="0,0,12,0" />
                             <CheckBox x:Name="ThemeCheckBox" Content="Use dark theme" Margin="0,0,12,0" />
                             <CheckBox x:Name="TrayNotificationsCheckBox" Content="Show tray notifications" Margin="0,0,12,0" />
+                            <CheckBox x:Name="SystemNotificationsCheckBox" Content="Show system notifications" Margin="0,0,12,0" />
                             <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>
                             <Button x:Name="TestGatewayButton" Width="140" Margin="8,0,0,0" Click="TestGatewayButton_Click">Test Gateway</Button>
                         </StackPanel>
@@ -183,6 +184,71 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="Captures the node host console output to a local log file and hides the task window." />
                 </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Approvals">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="8">
+                        <GroupBox Header="Pending approvals">
+                            <StackPanel Margin="8">
+                                <TextBlock x:Name="PendingApprovalsSummary" Foreground="{DynamicResource TextSecondaryBrush}" Text="No pending approvals." />
+                                <ListView x:Name="PendingApprovalsList" Height="160" Margin="0,8,0,0">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Requested" DisplayMemberBinding="{Binding RequestedAt}" Width="140" />
+                                            <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="160" />
+                                            <GridViewColumn Header="Args" DisplayMemberBinding="{Binding Arguments}" Width="260" />
+                                            <GridViewColumn Header="Source" DisplayMemberBinding="{Binding RequestedBy}" Width="140" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="ApproveRequestButton" Width="110" Margin="0,0,8,0" Click="ApproveRequestButton_Click">Approve</Button>
+                                    <Button x:Name="DenyRequestButton" Width="110" Margin="0,0,8,0" Click="DenyRequestButton_Click">Deny</Button>
+                                    <Button x:Name="RefreshApprovalsButton" Width="120" Click="RefreshApprovalsButton_Click">Refresh</Button>
+                                </StackPanel>
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Text="Approvals appear here within seconds of request." />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Exec policy" Margin="0,12,0,0">
+                            <StackPanel Margin="8">
+                                <TextBlock Text="Choose how system.run requests are handled." />
+                                <ComboBox x:Name="ExecPolicyComboBox" Width="260" Margin="0,6,0,0">
+                                    <ComboBoxItem Content="Prompt for each request" Tag="prompt" />
+                                    <ComboBoxItem Content="Always approve" Tag="allow" />
+                                    <ComboBoxItem Content="Always deny" Tag="deny" />
+                                </ComboBox>
+                                <TextBlock x:Name="ExecPolicyHelpText"
+                                           Margin="0,6,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Approval history" Margin="0,12,0,0">
+                            <StackPanel Margin="8">
+                                <ListView x:Name="ApprovalHistoryList" Height="180">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Decided" DisplayMemberBinding="{Binding DecidedAt}" Width="140" />
+                                            <GridViewColumn Header="Decision" DisplayMemberBinding="{Binding Decision}" Width="90" />
+                                            <GridViewColumn Header="Command" DisplayMemberBinding="{Binding Command}" Width="160" />
+                                            <GridViewColumn Header="Args" DisplayMemberBinding="{Binding Arguments}" Width="260" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="RefreshApprovalHistoryButton" Width="140" Margin="0,0,8,0" Click="RefreshApprovalHistoryButton_Click">Refresh History</Button>
+                                    <Button x:Name="OpenApprovalLogButton" Width="120" Click="OpenApprovalLogButton_Click">Open Log</Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <TabItem Header="Chrome Relay">

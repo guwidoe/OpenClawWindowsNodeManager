@@ -160,6 +160,13 @@ public sealed class TrayIconService : IDisposable
         _notificationsEnabled = enabled;
     }
 
+    public void ShowSystemNotification(string title, string message)
+    {
+        _notifyIcon.BalloonTipTitle = title;
+        _notifyIcon.BalloonTipText = message;
+        _notifyIcon.ShowBalloonTip(3000);
+    }
+
     public void Dispose()
     {
         _notifyIcon.Visible = false;

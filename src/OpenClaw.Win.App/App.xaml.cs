@@ -29,6 +29,10 @@ public partial class App : System.Windows.Application
     public NodeService NodeService { get; private set; } = null!;
     public GatewayTester GatewayTester { get; private set; } = null!;
     public ChromeRelayService ChromeRelayService { get; private set; } = null!;
+    public ExecApprovalHistoryStore ApprovalHistoryStore { get; private set; } = null!;
+    public ExecApprovalService ExecApprovalService { get; private set; } = null!;
+    public SystemNotificationBridge SystemNotifications { get; private set; } = null!;
+    private NodeStatus? _lastNotifiedStatus;
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
@@ -40,6 +44,8 @@ public partial class App : System.Windows.Application
         NodeService = new NodeService(ConfigStore, TokenStore, CliLocator);
         GatewayTester = new GatewayTester();
         ChromeRelayService = new ChromeRelayService();
+        ApprovalHistoryStore = new ExecApprovalHistoryStore();
+        ExecApprovalService = new ExecApprovalService(ApprovalHistoryStore, () => ConfigStore.Load().ExecApprovalPolicy);
 
         SeedConfigIfMissing();
 
@@ -60,6 +66,15 @@ public partial class App : System.Windows.Application
             onOpenControlUi: OpenControlUi,
             onQuit: Shutdown);
         _trayIcon.SetNotificationsEnabled(config.EnableTrayNotifications);
+
+        var rateLimiter = new NotificationRateLimiter(TimeSpan.FromSeconds(30));
+        var router = new SystemNotificationRouter(rateLimiter);
+        var publisher = new TrayIconNotificationPublisher(_trayIcon);
+        SystemNotifications = new SystemNotificationBridge(router, publisher);
+        SystemNotifications.SetEnabled(config.EnableSystemNotifications);
+
+        ExecApprovalService.ApprovalRequested += (_, request) => NotifyApprovalRequested(request);
+        ExecApprovalService.HistoryChanged += (_, _) => NotifyApprovalHistoryChange();
 
         StartPolling(config.PollIntervalSeconds);
     }
@@ -97,6 +112,7 @@ public partial class App : System.Windows.Application
             var stable = _statusStabilizer.Stabilize(status);
             _trayIcon?.UpdateStatus(stable);
             _mainWindow?.UpdateStatus(stable);
+            NotifyStatusChange(stable);
         }
         catch (Exception ex)
         {
@@ -253,6 +269,7 @@ public partial class App : System.Windows.Application
         _lastStatus = status;
         _trayIcon?.UpdateStatus(status);
         _mainWindow?.UpdateStatus(status);
+        NotifyStatusChange(status);
         UpdateLastAction(actionLabel, status);
         return status;
     }
@@ -271,6 +288,11 @@ public partial class App : System.Windows.Application
     public void UpdateTrayNotifications(bool enabled)
     {
         _trayIcon?.SetNotificationsEnabled(enabled);
+    }
+
+    public void UpdateSystemNotifications(bool enabled)
+    {
+        SystemNotifications?.SetEnabled(enabled);
     }
 
     private void UpdateLastAction(string actionLabel, NodeStatus status)
@@ -320,5 +342,51 @@ public partial class App : System.Windows.Application
         {
             Log.Error("Failed to seed config.", ex);
         }
+    }
+
+    private void NotifyStatusChange(NodeStatus current)
+    {
+        if (SystemNotifications == null)
+        {
+            return;
+        }
+
+        var previous = _lastNotifiedStatus;
+        _lastNotifiedStatus = current;
+
+        if (previous == null)
+        {
+            return;
+        }
+
+        if (previous.ToConnectionState() == current.ToConnectionState() && previous.Issue == current.Issue)
+        {
+            return;
+        }
+
+        var state = current.ToConnectionState();
+        var title = $"OpenClaw {state}";
+        var message = string.IsNullOrWhiteSpace(current.LastError)
+            ? $"Status: {state}"
+            : $"{state}: {current.LastError}";
+
+        var kind = state == NodeConnectionState.Error
+            ? SystemNotificationKind.Error
+            : SystemNotificationKind.StatusChange;
+
+        SystemNotifications.Notify(new SystemNotificationEvent(kind, title, message));
+    }
+
+    private void NotifyApprovalRequested(ExecApprovalRequest request)
+    {
+        SystemNotifications?.Notify(new SystemNotificationEvent(
+            SystemNotificationKind.ApprovalRequested,
+            "Approval required",
+            $"{request.Command} {request.Arguments}".Trim() + "\nOpen Settings → Approvals to respond."));
+    }
+
+    private void NotifyApprovalHistoryChange()
+    {
+        // History updates are surfaced in UI; no toast by default to avoid spam.
     }
 }

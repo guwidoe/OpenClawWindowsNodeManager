@@ -9,5 +9,7 @@
   "autoStartTray": true,
   "captureNodeHostOutput": true,
   "useDarkTheme": false,
-  "enableTrayNotifications": true
+  "enableTrayNotifications": true,
+  "enableSystemNotifications": true,
+  "execApprovalPolicy": "prompt"
 }
