@@ -626,21 +626,7 @@ public sealed class NodeService
 
     private static string BuildRunArgs(NodeRunSettings settings)
     {
-        var builder = new StringBuilder("node run");
-        builder.Append(" --host ").Append(EscapeArg(settings.Host));
-        builder.Append(" --port ").Append(settings.Port);
-        if (settings.UseTls)
-        {
-            builder.Append(" --tls");
-        }
-        if (!string.IsNullOrWhiteSpace(settings.TlsFingerprint))
-        {
-            builder.Append(" --tls-fingerprint ").Append(EscapeArg(settings.TlsFingerprint));
-        }
-        if (!string.IsNullOrWhiteSpace(settings.DisplayName))
-        {
-            builder.Append(" --display-name ").Append(EscapeArg(settings.DisplayName));
-        }
-        return builder.ToString();
+        _ = settings;
+        return "node run";
     }
 }
