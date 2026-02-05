@@ -28,6 +28,9 @@ A native Windows companion for running an OpenClaw node host with a tray app + s
 # Restore
 dotnet restore .\\OpenClawWindowsNodeManager.sln
 
+# Gate (build + tests) - must pass after each completed working packet
+.\scripts\gate.ps1
+
 # Build (Release)
 dotnet build .\\OpenClawWindowsNodeManager.sln -c Release
 
