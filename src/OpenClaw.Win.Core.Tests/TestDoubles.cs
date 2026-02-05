@@ -91,6 +91,40 @@ internal sealed class FakeNodeHostRunner : INodeHostRunner
     }
 }
 
+internal sealed class FakeCanvasRenderer : ICanvasRenderer
+{
+    public CanvasStatus Status { get; private set; } = CanvasStatus.Ready;
+    public event EventHandler<CanvasStatus>? StatusChanged;
+    public CanvasContent? LastContent { get; private set; }
+    public string? LastScript { get; private set; }
+    public CanvasEvalResult EvalResult { get; set; } = new(true, "ok", null);
+    public CanvasSnapshotResult SnapshotResult { get; set; } = new(true, Array.Empty<byte>(), null);
+
+    public Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        Status = CanvasStatus.Ready;
+        StatusChanged?.Invoke(this, Status);
+        return Task.CompletedTask;
+    }
+
+    public Task RenderAsync(CanvasContent content, CancellationToken cancellationToken = default)
+    {
+        LastContent = content;
+        return Task.CompletedTask;
+    }
+
+    public Task<CanvasEvalResult> EvalAsync(string script, CancellationToken cancellationToken = default)
+    {
+        LastScript = script;
+        return Task.FromResult(EvalResult);
+    }
+
+    public Task<CanvasSnapshotResult> CaptureSnapshotAsync(CanvasSnapshotOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(SnapshotResult);
+    }
+}
+
 internal sealed class TempStateDir : IDisposable
 {
     private const string OverrideEnvVar = "OPENCLAW_COMPANION_STATE_DIR";
