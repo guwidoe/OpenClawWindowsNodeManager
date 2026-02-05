@@ -11,11 +11,8 @@ public sealed class NodeService
 {
     private sealed record GatewayProbeResult(bool? Connected, NodeIssue? Issue, string? ErrorMessage);
     private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(30);
-    private const string NodeTaskName = "OpenClaw Node";
-    private static readonly string NodeCmdPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".openclaw",
-        "node.cmd");
+    private System.Diagnostics.Process? _hiddenNodeProcess;
+    private readonly object _processLock = new();
 
     private readonly ConfigStore _configStore;
     private readonly TokenStore _tokenStore;
@@ -171,26 +168,54 @@ public sealed class NodeService
             await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
         }
 
-        if (config.CaptureNodeHostOutput)
-        {
-            await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
-        }
-
         if (!status.IsStatusCheckFailed && status.IsRunning && status.IsConnected)
         {
             progress?.Report("Already connected.");
             return status;
         }
 
-        if (!status.IsRunning)
+        if (config.CaptureNodeHostOutput)
         {
-            progress?.Report("Starting node service...");
-            await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+            await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
+
+            if (IsHiddenProcessRunning())
+            {
+                progress?.Report("Node host already running (hidden).");
+            }
+            else
+            {
+                if (status.HasForegroundProcess)
+                {
+                    progress?.Report("Stopping visible node host...");
+                    await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+                    NodeProcessManager.KillForegroundNodeProcesses();
+                }
+
+                progress?.Report("Starting node host (hidden)...");
+                var started = StartHiddenNodeHost(cliPath, config);
+                if (!started)
+                {
+                    return new NodeStatus
+                    {
+                        IsOpenClawAvailable = true,
+                        Issue = NodeIssue.UnknownError,
+                        LastError = "Failed to start hidden node host."
+                    };
+                }
+            }
         }
-        else if (!status.IsConnected)
+        else
         {
-            progress?.Report("Restarting node service...");
-            await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+            if (!status.IsRunning)
+            {
+                progress?.Report("Starting node service...");
+                await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+            }
+            else if (!status.IsConnected)
+            {
+                progress?.Report("Restarting node service...");
+                await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+            }
         }
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(30);
@@ -519,77 +544,141 @@ public sealed class NodeService
         await EnsureNodeHostOutputCaptureAsync(config, cancellationToken).ConfigureAwait(false);
     }
 
-    private static string EscapePowerShellString(string value)
-    {
-        return value.Replace("`", "``").Replace("\"", "`\"");
-    }
-
     private async Task EnsureNodeHostOutputCaptureAsync(AppConfig config, CancellationToken cancellationToken)
     {
-        if (!config.CaptureNodeHostOutput)
-        {
-            return;
-        }
-
-        if (!File.Exists(NodeCmdPath))
-        {
-            return;
-        }
-
-        if (!await IsNodeTaskInstalledAsync(cancellationToken).ConfigureAwait(false))
-        {
-            return;
-        }
-
+        await Task.Yield();
         AppPaths.EnsureDirectories();
-
-        var wrapperPath = AppPaths.NodeHostWrapperPath;
-        var logPath = AppPaths.NodeHostLogPath;
-        var script = BuildNodeHostWrapperScript(NodeCmdPath, logPath);
-        File.WriteAllText(wrapperPath, script);
-
-        var command = $"powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \\\"{wrapperPath}\\\"";
-        var args = $"/Change /TN \"{NodeTaskName}\" /TR \"{command}\"";
-        var result = await ProcessRunner.RunAsync(
-            "schtasks",
-            args,
-            TimeSpan.FromSeconds(10),
-            cancellationToken: cancellationToken).ConfigureAwait(false);
-
-        if (result.ExitCode != 0)
+        if (!File.Exists(AppPaths.NodeHostLogPath))
         {
-            Log.Warn($"Failed to update scheduled task for hidden node output: {result.StdErr}{result.StdOut}");
+            File.WriteAllText(AppPaths.NodeHostLogPath, $"[{DateTimeOffset.Now:O}] node host output capture enabled.{Environment.NewLine}");
         }
     }
 
-    private static string BuildNodeHostWrapperScript(string nodeCmdPath, string logPath)
+    private bool IsHiddenProcessRunning()
     {
-        var escapedNodeCmd = EscapePowerShellString(nodeCmdPath);
-        var escapedLogPath = EscapePowerShellString(logPath);
-
-        var builder = new StringBuilder();
-        builder.AppendLine("$ErrorActionPreference = \"Stop\"");
-        builder.AppendLine($"$nodeCmd = \"{escapedNodeCmd}\"");
-        builder.AppendLine($"$logPath = \"{escapedLogPath}\"");
-        builder.AppendLine("if (!(Test-Path $nodeCmd)) { exit 1 }");
-        builder.AppendLine("New-Item -ItemType Directory -Force -Path (Split-Path $logPath) | Out-Null");
-        builder.AppendLine("$ts = Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"");
-        builder.AppendLine("Add-Content -Path $logPath -Value (\"----- node host start \" + $ts + \" -----\")");
-        builder.AppendLine("& cmd.exe /c \"call `\"$nodeCmd`\" >> `\"$logPath`\" 2>&1\"");
-        builder.AppendLine("$ts = Get-Date -Format \"yyyy-MM-dd HH:mm:ss\"");
-        builder.AppendLine("Add-Content -Path $logPath -Value (\"----- node host exit \" + $ts + \" -----\")");
-        builder.AppendLine("exit 0");
-        return builder.ToString();
+        lock (_processLock)
+        {
+            return _hiddenNodeProcess != null && !_hiddenNodeProcess.HasExited;
+        }
     }
 
-    private static async Task<bool> IsNodeTaskInstalledAsync(CancellationToken cancellationToken)
+    private bool StartHiddenNodeHost(string cliPath, AppConfig config)
     {
-        var result = await ProcessRunner.RunAsync(
-            "schtasks",
-            $"/Query /TN \"{NodeTaskName}\"",
-            TimeSpan.FromSeconds(5),
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var runArgs = BuildRunArgs(config);
+            var (fileName, arguments) = BuildCliInvocation(cliPath, runArgs);
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
 
-        return result.ExitCode == 0;
+            var token = _tokenStore.LoadToken();
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                startInfo.Environment["OPENCLAW_GATEWAY_TOKEN"] = token;
+            }
+
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true
+            };
+
+            if (!process.Start())
+            {
+                return false;
+            }
+
+            AttachNodeHostLogging(process);
+
+            lock (_processLock)
+            {
+                _hiddenNodeProcess = process;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to start hidden node host.", ex);
+            return false;
+        }
+    }
+
+    private static void AttachNodeHostLogging(System.Diagnostics.Process process)
+    {
+        AppPaths.EnsureDirectories();
+        var logPath = AppPaths.NodeHostLogPath;
+
+        void AppendLine(string prefix, string line)
+        {
+            var entry = $"[{DateTimeOffset.Now:O}] {prefix}{line}{Environment.NewLine}";
+            File.AppendAllText(logPath, entry);
+        }
+
+        process.OutputDataReceived += (_, args) =>
+        {
+            if (!string.IsNullOrWhiteSpace(args.Data))
+            {
+                AppendLine(string.Empty, args.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (_, args) =>
+        {
+            if (!string.IsNullOrWhiteSpace(args.Data))
+            {
+                AppendLine("ERR: ", args.Data);
+            }
+        };
+
+        process.Exited += (_, _) =>
+        {
+            AppendLine(string.Empty, $"[node host exited with code {process.ExitCode}]");
+        };
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+    }
+
+    private static (string FileName, string Arguments) BuildCliInvocation(string cliPath, string arguments)
+    {
+        var lower = cliPath.ToLowerInvariant();
+        if (lower.EndsWith(".cmd") || lower.EndsWith(".bat"))
+        {
+            return ("cmd.exe", $"/c \"{cliPath}\" {arguments}");
+        }
+        if (lower.EndsWith(".ps1"))
+        {
+            return ("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{cliPath}\" {arguments}");
+        }
+
+        return (cliPath, arguments);
+    }
+
+    private static string BuildRunArgs(AppConfig config)
+    {
+        var builder = new StringBuilder("node run");
+        builder.Append(" --host ").Append(EscapeArg(config.GatewayHost));
+        builder.Append(" --port ").Append(config.GatewayPort);
+        if (config.UseTls)
+        {
+            builder.Append(" --tls");
+        }
+        if (!string.IsNullOrWhiteSpace(config.TlsFingerprint))
+        {
+            builder.Append(" --tls-fingerprint ").Append(EscapeArg(config.TlsFingerprint));
+        }
+        if (!string.IsNullOrWhiteSpace(config.DisplayName))
+        {
+            builder.Append(" --display-name ").Append(EscapeArg(config.DisplayName));
+        }
+        return builder.ToString();
     }
 }
