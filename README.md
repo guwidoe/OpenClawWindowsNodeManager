@@ -2,9 +2,20 @@
 
 A native Windows companion for running an OpenClaw **node host** with a friendly tray experience and a scriptable CLI. The app wraps the upstream `openclaw` CLI (it does not replace it).
 
+## The Problem This App Solves
+OpenClaw’s Windows node host is powerful but **CLI-first**. That means:
+- Starting/stopping the node requires terminal commands or scheduled tasks.
+- Connection status is easy to miss and hard to verify at a glance.
+- Gateway tokens and device pairing create friction for first-time setup.
+- Browser relay setup requires several steps and lacks feedback.
+
+This companion makes the Windows node feel **first-class**: a one-click tray toggle, clear status, guided setup, and a scriptable CLI for automation.
+
 ## Highlights
 - System tray toggle with clear **Connected / Disconnected / Degraded / Error** states.
 - Settings UI for gateway configuration, token storage, and Chrome relay setup.
+- SSH-assisted gateway token fetch (optional, key-based auth).
+- In-app banners for missing tokens and pairing requirements.
 - CLI for automation: `status`, `connect`, `disconnect`, `toggle`, `configure`, `install`, `uninstall`, `logs`, `doctor`.
 
 ## Repo Layout
@@ -82,7 +93,8 @@ The companion uses the upstream CLI for lifecycle management:
 ## Troubleshooting
 - Run `openclaw-win doctor` for a quick environment check.
 - Ensure `openclaw` is on PATH (`where openclaw`).
-- If status shows pairing required, approve the node in the gateway UI or via `openclaw nodes pending` / `openclaw nodes approve`.
+- If status shows pairing required, approve the **device** in the gateway UI or via `openclaw devices list` / `openclaw devices approve <requestId>`.
+- Pairing for the Control UI does **not** automatically pair the Windows CLI device. The app needs its own device approval to query `nodes status`.
 
 ## Roadmap (MVP Focus)
 - Harden JSON parsing against upstream schema changes.
