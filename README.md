@@ -67,6 +67,10 @@ Files:
 - `logs/app.log` and `logs/node.log`
 - `diagnostics/` exported diagnostic bundles
 
+## Theme
+- Toggle dark theme in Settings → Connection (“Use dark theme”).
+- CLI: `openclaw-win configure --dark-theme` or `--light-theme`.
+
 ### Preconfigured settings
 If `personal-config.json` exists alongside the tray app binary, the app will seed
 `config.json` on first launch. Use `personal-config.example.json` as a template
@@ -96,7 +100,7 @@ The companion uses the upstream CLI for lifecycle management:
 - If status shows pairing required, approve the **device** in the gateway UI or via `openclaw devices list` / `openclaw devices approve <requestId>`.
 - Pairing for the Control UI does **not** automatically pair the Windows CLI device. The app needs its own device approval to query `nodes status`.
 
-## Roadmap (MVP Focus)
-- Harden JSON parsing against upstream schema changes.
-- Optional: direct Scheduled Task management if needed.
-- UX polish for pairing and Chrome relay setup.
+## What’s Next
+- Exec approvals UI and history.
+- System notifications bridge (gateway → Windows toasts).
+- Canvas/WebView + screen capture for full visual parity.
