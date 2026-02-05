@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace OpenClaw.Win.Core;
 
-public sealed class ChromeRelayService
+public class ChromeRelayService
 {
-    public async Task<bool> VerifyRelayAsync(int port, CancellationToken cancellationToken = default)
+    public virtual async Task<bool> VerifyRelayAsync(int port, CancellationToken cancellationToken = default)
     {
         var url = $"http://127.0.0.1:{port}/";
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };

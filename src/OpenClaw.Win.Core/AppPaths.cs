@@ -33,6 +33,8 @@ public static class AppPaths
     public static string NodeLogPath => Path.Combine(LogsDir, "node.log");
     public static string NodeHostLogPath => Path.Combine(LogsDir, "node-host.log");
     public static string DiagnosticsDir => Path.Combine(BaseDir, "diagnostics");
+    public static string CanvasSnapshotsDir => Path.Combine(DiagnosticsDir, "canvas");
+    public static string ScreenCapturesDir => Path.Combine(DiagnosticsDir, "screen-captures");
     public static string ExecApprovalLogPath => Path.Combine(BaseDir, "exec-approvals.log");
 
     public static void EnsureDirectories()
@@ -40,5 +42,7 @@ public static class AppPaths
         Directory.CreateDirectory(BaseDir);
         Directory.CreateDirectory(LogsDir);
         Directory.CreateDirectory(DiagnosticsDir);
+        Directory.CreateDirectory(CanvasSnapshotsDir);
+        Directory.CreateDirectory(ScreenCapturesDir);
     }
 }
