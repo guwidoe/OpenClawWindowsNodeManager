@@ -16,6 +16,8 @@ This companion makes the Windows node feel **first-class**: a one-click tray tog
 - Settings UI for gateway configuration, token storage, and Chrome relay setup.
 - SSH-assisted gateway token fetch (optional, key-based auth).
 - In-app banners for missing tokens and pairing requirements.
+- Exec approvals UI with local history and policy controls.
+- System notifications for key events (toggleable).
 - CLI for automation: `status`, `connect`, `disconnect`, `toggle`, `configure`, `install`, `uninstall`, `logs`, `doctor`.
 
 ## Repo Layout
@@ -101,6 +103,4 @@ The companion uses the upstream CLI for lifecycle management:
 - Pairing for the Control UI does **not** automatically pair the Windows CLI device. The app needs its own device approval to query `nodes status`.
 
 ## What’s Next
-- Exec approvals UI and history.
-- System notifications bridge (gateway → Windows toasts).
 - Canvas/WebView + screen capture for full visual parity.
