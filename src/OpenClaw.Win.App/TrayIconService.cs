@@ -14,6 +14,7 @@ public sealed class TrayIconService : IDisposable
     private readonly ContextMenuStrip _menu;
     private readonly TrayMenuDismissFilter _menuDismissFilter;
     private readonly ToolStripMenuItem _statusItem;
+    private readonly ToolStripMenuItem _busyItem;
     private readonly ToolStripMenuItem _connectItem;
     private readonly ToolStripMenuItem _disconnectItem;
     private readonly Dictionary<NodeConnectionState, Icon> _icons;
@@ -21,6 +22,7 @@ public sealed class TrayIconService : IDisposable
     private NodeConnectionState _lastNotifiedState = NodeConnectionState.Unknown;
     private DateTimeOffset _lastNotificationAt = DateTimeOffset.MinValue;
     private readonly TimeSpan _notificationCooldown = TimeSpan.FromSeconds(30);
+    private bool _isBusy;
 
     public TrayIconService(
         Func<Task> onConnect,
@@ -53,6 +55,12 @@ public sealed class TrayIconService : IDisposable
             Enabled = false
         };
 
+        _busyItem = new ToolStripMenuItem("Working...")
+        {
+            Enabled = false,
+            Visible = false
+        };
+
         _connectItem = new ToolStripMenuItem("Connect", null, async (_, _) => await onConnect());
         _disconnectItem = new ToolStripMenuItem("Disconnect", null, async (_, _) => await onDisconnect());
 
@@ -64,6 +72,7 @@ public sealed class TrayIconService : IDisposable
         _menu = new ContextMenuStrip();
         _menu.AutoClose = true;
         _menu.Items.Add(_statusItem);
+        _menu.Items.Add(_busyItem);
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(_connectItem);
         _menu.Items.Add(_disconnectItem);
@@ -91,6 +100,12 @@ public sealed class TrayIconService : IDisposable
 
     public void UpdateStatus(NodeStatus status)
     {
+        if (_isBusy)
+        {
+            _busyItem.Visible = false;
+            _isBusy = false;
+        }
+
         var state = status.ToConnectionState();
         _statusItem.Text = $"Status: {state}";
         var tooltip = status.GatewayHost == null
@@ -123,6 +138,10 @@ public sealed class TrayIconService : IDisposable
 
     public void SetBusy(string message)
     {
+        _isBusy = true;
+        _busyItem.Text = message;
+        _busyItem.Visible = true;
+
         var busyState = NodeConnectionState.Connecting;
         _statusItem.Text = $"Status: {message}";
         SetNotifyIconText($"OpenClaw: {message}");
