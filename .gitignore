@@ -37,6 +37,7 @@ packages/
 
 # Publish outputs
 **/publish/
+dist/
 
 # Personal config
 **/personal-config.json
