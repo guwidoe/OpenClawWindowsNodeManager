@@ -189,7 +189,16 @@ public sealed class NodeService
         if (!status.IsInstalled)
         {
             progress?.Report("Installing node service...");
-            await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
+            var installResult = await RunOpenClawAsync(cliPath, installArgs, cancellationToken).ConfigureAwait(false);
+            if (installResult.ExitCode != 0 && !installResult.TimedOut)
+            {
+                return new NodeStatus
+                {
+                    IsOpenClawAvailable = true,
+                    Issue = NodeIssue.UnknownError,
+                    LastError = GetFailureMessage(installResult, "Node install failed.")
+                };
+            }
         }
 
         if (config.CaptureNodeHostOutput)
@@ -223,7 +232,16 @@ public sealed class NodeService
             if (status.IsRunning || status.HasForegroundProcess)
             {
                 progress?.Report("Stopping existing node host...");
-                await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+                var stopResult = await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+                if (stopResult.ExitCode != 0 && !stopResult.TimedOut)
+                {
+                    return new NodeStatus
+                    {
+                        IsOpenClawAvailable = true,
+                        Issue = NodeIssue.UnknownError,
+                        LastError = GetFailureMessage(stopResult, "Failed to stop existing node host.")
+                    };
+                }
                 _nodeProcessManager.KillForegroundNodeProcesses();
             }
 
@@ -251,12 +269,30 @@ public sealed class NodeService
             if (!status.IsRunning)
             {
                 progress?.Report("Starting node service...");
-                await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+                var restartResult = await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+                if (restartResult.ExitCode != 0 && !restartResult.TimedOut)
+                {
+                    return new NodeStatus
+                    {
+                        IsOpenClawAvailable = true,
+                        Issue = NodeIssue.UnknownError,
+                        LastError = GetFailureMessage(restartResult, "Node start failed.")
+                    };
+                }
             }
             else if (!status.IsConnected)
             {
                 progress?.Report("Restarting node service...");
-                await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+                var restartResult = await RunOpenClawAsync(cliPath, "node restart --json", cancellationToken).ConfigureAwait(false);
+                if (restartResult.ExitCode != 0 && !restartResult.TimedOut)
+                {
+                    return new NodeStatus
+                    {
+                        IsOpenClawAvailable = true,
+                        Issue = NodeIssue.UnknownError,
+                        LastError = GetFailureMessage(restartResult, "Node restart failed.")
+                    };
+                }
             }
         }
 
@@ -286,11 +322,16 @@ public sealed class NodeService
             _nodeHostRunner.Stop();
         }
 
-        await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
+        var stopResult = await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
         progress?.Report("Waiting for shutdown...");
         var status = await WaitForStoppedAsync(waitTimeout, cancellationToken, progress).ConfigureAwait(false);
+        if (stopResult.ExitCode != 0 && !stopResult.TimedOut && status.IsRunning)
+        {
+            status.Issue = NodeIssue.UnknownError;
+            status.LastError ??= GetFailureMessage(stopResult, "Node stop failed.");
+        }
 
         if (_nodeHostRunner.IsRunning)
         {
@@ -586,6 +627,21 @@ public sealed class NodeService
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         return redacted;
+    }
+
+    private static string GetFailureMessage(ProcessResult result, string fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(result.StdErr))
+        {
+            return result.StdErr.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.StdOut))
+        {
+            return result.StdOut.Trim();
+        }
+
+        return fallback;
     }
 
     public async Task EnsureNodeHostOutputCaptureAsync(CancellationToken cancellationToken = default)

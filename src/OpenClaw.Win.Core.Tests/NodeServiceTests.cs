@@ -133,6 +133,46 @@ public class NodeServiceTests
     }
 
     [Fact]
+    public async Task ConnectAsync_InstallFailure_ReturnsError()
+    {
+        using var temp = new TempStateDir();
+        var configStore = new FakeConfigStore
+        {
+            Config = new AppConfig
+            {
+                GatewayHost = "gw.local",
+                GatewayPort = 443,
+                UseTls = true,
+                DisplayName = "NODE-A",
+                CaptureNodeHostOutput = false
+            }
+        };
+
+        var processRunner = new FakeProcessRunner();
+        processRunner.Results["node status --json"] = StatusResult("""
+                                                                  {
+                                                                    "service": { "loaded": false },
+                                                                    "runtime": { "status": "stopped" }
+                                                                  }
+                                                                  """);
+        processRunner.Results["node install --host gw.local --port 443 --tls --display-name NODE-A --force"] =
+            new ProcessResult { ExitCode = 1, StdErr = "install failed" };
+
+        var service = new NodeService(
+            configStore,
+            new FakeTokenStore { Token = "token" },
+            new FakeCliLocator(),
+            processRunner,
+            new FakeNodeProcessManager(),
+            new FakeNodeHostRunner());
+
+        var status = await service.ConnectAsync(TimeSpan.Zero);
+
+        Assert.Equal(NodeIssue.UnknownError, status.Issue);
+        Assert.Equal("install failed", status.LastError);
+    }
+
+    [Fact]
     public async Task DisconnectAsync_StopsHiddenRunner()
     {
         using var temp = new TempStateDir();
