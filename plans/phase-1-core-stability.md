@@ -10,6 +10,7 @@ Deliver a reliable, no‑surprises Windows node companion that makes connect/dis
 - Minimal pairing/token flow required for connectivity (not a full dashboard replacement).
 - Built‑in logs and diagnostics suitable for support requests.
 - CLI parity for status/connect/disconnect/diagnostics (scriptable).
+- Optional dark theme aligned with OpenClaw visual vibes (native look, easy on eyes).
 
 ## User Experience Notes
 - Default posture remains **disconnected** until the user explicitly connects.
@@ -31,6 +32,7 @@ Deliver a reliable, no‑surprises Windows node companion that makes connect/dis
 - Status stabilizes and does not oscillate when the gateway is temporarily slow.
 - Diagnostics bundle includes logs + redacted config + status.
 - CLI commands match UI behavior and exit codes.
+- Dark theme can be enabled and stays consistent across tray + settings UI.
 
 ## Risks / Dependencies
 - Upstream `openclaw` CLI output changes may affect status parsing.
