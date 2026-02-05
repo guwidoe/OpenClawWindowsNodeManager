@@ -6,6 +6,7 @@ using Xunit;
 
 namespace OpenClaw.Win.Core.Tests;
 
+[Collection("StateDir")]
 public class NodeServiceTests
 {
     private static ProcessResult StatusResult(string json) => new()
