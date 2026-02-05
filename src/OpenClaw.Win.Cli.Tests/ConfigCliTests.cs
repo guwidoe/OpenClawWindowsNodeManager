@@ -17,7 +17,7 @@ public class ConfigCliTests
         Assert.Equal(ExitCodes.Success, exit);
 
         var config = new ConfigStore().Load();
-        Assert.True(config.UseDarkTheme);
+        Assert.Equal(ThemePreference.Dark, config.ThemePreference);
         Assert.False(config.EnableTrayNotifications);
         Assert.False(config.EnableSystemNotifications);
         Assert.Equal(ExecApprovalPolicy.Deny, config.ExecApprovalPolicy);

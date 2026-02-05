@@ -138,12 +138,17 @@ public static class Program
 
         if (options.ContainsKey("dark-theme"))
         {
-            config.UseDarkTheme = true;
+            config.ThemePreference = ThemePreference.Dark;
         }
 
         if (options.ContainsKey("light-theme"))
         {
-            config.UseDarkTheme = false;
+            config.ThemePreference = ThemePreference.Light;
+        }
+
+        if (options.ContainsKey("system-theme"))
+        {
+            config.ThemePreference = ThemePreference.System;
         }
 
         if (options.ContainsKey("tray-notifications"))
@@ -280,7 +285,7 @@ public static class Program
         Console.WriteLine("  connect");
         Console.WriteLine("  disconnect");
         Console.WriteLine("  toggle");
-        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>] [--dark-theme|--light-theme] [--tray-notifications|--no-tray-notifications] [--system-notifications|--no-system-notifications] [--exec-policy <prompt|allow|deny>]");
+        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>] [--dark-theme|--light-theme|--system-theme] [--tray-notifications|--no-tray-notifications] [--system-notifications|--no-system-notifications] [--exec-policy <prompt|allow|deny>]");
         Console.WriteLine("  install");
         Console.WriteLine("  uninstall");
         Console.WriteLine("  logs --tail [--lines N]");

@@ -8,7 +8,7 @@
   "pollIntervalSeconds": 5,
   "autoStartTray": true,
   "captureNodeHostOutput": true,
-  "useDarkTheme": false,
+  "themePreference": "system",
   "enableTrayNotifications": true,
   "enableSystemNotifications": true,
   "execApprovalPolicy": "prompt"

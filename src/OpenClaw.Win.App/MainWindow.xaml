@@ -121,7 +121,12 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <CheckBox x:Name="AutoStartCheckBox" Content="Start tray app at login" Margin="0,0,12,0" />
-                            <CheckBox x:Name="ThemeCheckBox" Content="Use dark theme" Margin="0,0,12,0" />
+                            <TextBlock Text="Theme" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <ComboBox x:Name="ThemePreferenceComboBox" Width="140" Margin="0,0,12,0">
+                                <ComboBoxItem Content="System" Tag="system" />
+                                <ComboBoxItem Content="Light" Tag="light" />
+                                <ComboBoxItem Content="Dark" Tag="dark" />
+                            </ComboBox>
                             <CheckBox x:Name="TrayNotificationsCheckBox" Content="Show tray notifications" Margin="0,0,12,0" />
                             <CheckBox x:Name="SystemNotificationsCheckBox" Content="Show system notifications" Margin="0,0,12,0" />
                             <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>

@@ -34,6 +34,16 @@ Provide a repeatable, host‑independent testing framework so any agent can veri
 - Tests must be deterministic and run under `windows-latest`.
 - No network access required.
 
+## Local Gate (Working Packet)
+Run this before marking a packet complete:
+```
+.\scripts\gate.ps1
+```
+
+Gate definition:
+- `dotnet build` (Release)
+- `dotnet test` (Release) for all test projects
+
 ## Acceptance Criteria
 - Any feature PR includes at least one automated test.
 - CI reliably passes on a clean runner.

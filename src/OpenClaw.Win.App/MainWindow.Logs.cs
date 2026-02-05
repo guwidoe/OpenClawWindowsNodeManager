@@ -100,7 +100,7 @@ public partial class MainWindow
                 config.RelayPort,
                 config.AutoStartTray,
                 config.CaptureNodeHostOutput,
-                config.UseDarkTheme,
+                config.ThemePreference,
                 config.EnableTrayNotifications,
                 config.EnableSystemNotifications,
                 config.ExecApprovalPolicy,
@@ -196,7 +196,7 @@ public partial class MainWindow
             return;
         }
 
-        Clipboard.SetText(_lastDiagnosticsPath);
+        System.Windows.Clipboard.SetText(_lastDiagnosticsPath);
         WpfMessageBox.Show("Diagnostics path copied to clipboard.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

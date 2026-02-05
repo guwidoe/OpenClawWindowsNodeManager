@@ -50,7 +50,7 @@ public partial class App : System.Windows.Application
         SeedConfigIfMissing();
 
         var config = ConfigStore.Load();
-        ThemeManager.ApplyTheme(config.UseDarkTheme);
+        ThemeManager.ApplyTheme(config.ThemePreference);
 
         _mainWindow = new MainWindow();
         _mainWindow.Hide();

@@ -14,7 +14,7 @@ public sealed class AppConfig
     public int PollIntervalSeconds { get; set; } = 5;
     public bool AutoStartTray { get; set; } = true;
     public bool CaptureNodeHostOutput { get; set; } = true;
-    public bool UseDarkTheme { get; set; } = false;
+    public ThemePreference ThemePreference { get; set; } = ThemePreference.System;
     public bool EnableTrayNotifications { get; set; } = true;
     public bool EnableSystemNotifications { get; set; } = true;
     public ExecApprovalPolicy ExecApprovalPolicy { get; set; } = ExecApprovalPolicy.Prompt;

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using Brushes = System.Windows.Media.Brushes;
 using WpfApplication = System.Windows.Application;
 using WpfMessageBox = System.Windows.MessageBox;
@@ -84,7 +86,7 @@ public partial class MainWindow : Window
         RelayPortTextBox.Text = config.RelayPort.ToString();
         AutoStartCheckBox.IsChecked = config.AutoStartTray;
         CaptureNodeOutputCheckBox.IsChecked = config.CaptureNodeHostOutput;
-        ThemeCheckBox.IsChecked = config.UseDarkTheme;
+        SetThemePreferenceSelection(config.ThemePreference);
         TrayNotificationsCheckBox.IsChecked = config.EnableTrayNotifications;
         SystemNotificationsCheckBox.IsChecked = config.EnableSystemNotifications;
         SshHostTextBox.Text = config.SshHost ?? string.Empty;
@@ -118,7 +120,7 @@ public partial class MainWindow : Window
 
         config.AutoStartTray = AutoStartCheckBox.IsChecked == true;
         config.CaptureNodeHostOutput = CaptureNodeOutputCheckBox.IsChecked == true;
-        config.UseDarkTheme = ThemeCheckBox.IsChecked == true;
+        config.ThemePreference = GetThemePreferenceSelection();
         config.EnableTrayNotifications = TrayNotificationsCheckBox.IsChecked == true;
         config.EnableSystemNotifications = SystemNotificationsCheckBox.IsChecked == true;
         config.ExecApprovalPolicy = GetExecPolicySelection();
@@ -133,7 +135,7 @@ public partial class MainWindow : Window
 
         app.ConfigStore.Save(config);
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
-        ThemeManager.ApplyTheme(config.UseDarkTheme);
+        ThemeManager.ApplyTheme(config.ThemePreference);
         app.UpdateTrayNotifications(config.EnableTrayNotifications);
         app.UpdateSystemNotifications(config.EnableSystemNotifications);
 
@@ -331,6 +333,34 @@ public partial class MainWindow : Window
         TokenSavedLabel.Text = app.TokenStore.HasToken
             ? "Token stored securely (DPAPI)."
             : "No token stored yet.";
+    }
+
+    private void SetThemePreferenceSelection(ThemePreference preference)
+    {
+        foreach (var item in ThemePreferenceComboBox.Items.OfType<ComboBoxItem>())
+        {
+            if (item.Tag is string tag &&
+                Enum.TryParse<ThemePreference>(tag, true, out var parsed) &&
+                parsed == preference)
+            {
+                ThemePreferenceComboBox.SelectedItem = item;
+                return;
+            }
+        }
+
+        ThemePreferenceComboBox.SelectedIndex = 0;
+    }
+
+    private ThemePreference GetThemePreferenceSelection()
+    {
+        if (ThemePreferenceComboBox.SelectedItem is ComboBoxItem item &&
+            item.Tag is string tag &&
+            Enum.TryParse<ThemePreference>(tag, true, out var parsed))
+        {
+            return parsed;
+        }
+
+        return ThemePreference.System;
     }
 
     private async void InstallButton_Click(object sender, RoutedEventArgs e)

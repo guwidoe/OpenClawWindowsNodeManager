@@ -70,8 +70,8 @@ Files:
 - `diagnostics/` exported diagnostic bundles
 
 ## Theme
-- Toggle dark theme in Settings → Connection (“Use dark theme”).
-- CLI: `openclaw-win configure --dark-theme` or `--light-theme`.
+- Theme defaults to the system setting. Change it in Settings → Connection (Theme).
+- CLI: `openclaw-win configure --system-theme`, `--dark-theme`, or `--light-theme`.
 
 ### Preconfigured settings
 If `personal-config.json` exists alongside the tray app binary, the app will seed
