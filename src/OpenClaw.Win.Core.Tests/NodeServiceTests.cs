@@ -253,4 +253,44 @@ public class NodeServiceTests
         Assert.False(status.IsStatusCheckFailed);
         Assert.Equal(NodeIssue.TokenInvalid, status.Issue);
     }
+
+    [Fact]
+    public async Task GetStatusAsync_GatewayNetworkError_MapsToUnreachable()
+    {
+        using var temp = new TempStateDir();
+        var configStore = new FakeConfigStore
+        {
+            Config = new AppConfig
+            {
+                GatewayHost = "gw.local",
+                GatewayPort = 443,
+                UseTls = true
+            }
+        };
+
+        var processRunner = new FakeProcessRunner();
+        processRunner.Results["node status --json"] = StatusResult("""
+                                                                  {
+                                                                    "service": { "loaded": true },
+                                                                    "running": true,
+                                                                    "connected": false
+                                                                  }
+                                                                  """);
+
+        processRunner.Results["nodes status --connected --json --url https://gw.local:443 --token token"] =
+            new ProcessResult { ExitCode = 1, StdErr = "ENOTFOUND" };
+
+        var service = new NodeService(
+            configStore,
+            new FakeTokenStore { Token = "token" },
+            new FakeCliLocator(),
+            processRunner,
+            new FakeNodeProcessManager(),
+            new FakeNodeHostRunner());
+
+        var status = await service.GetStatusAsync();
+
+        Assert.Equal(NodeIssue.GatewayUnreachable, status.Issue);
+        Assert.Equal(NodeConnectionState.Degraded, status.ToConnectionState());
+    }
 }

@@ -34,6 +34,20 @@ public class NodeStatusTests
     }
 
     [Fact]
+    public void ToConnectionState_DegradedWhenGatewayUnreachableAndRunning()
+    {
+        var status = new NodeStatus { Issue = NodeIssue.GatewayUnreachable, IsRunning = true };
+        Assert.Equal(NodeConnectionState.Degraded, status.ToConnectionState());
+    }
+
+    [Fact]
+    public void ToConnectionState_DisconnectedWhenGatewayUnreachableAndStopped()
+    {
+        var status = new NodeStatus { Issue = NodeIssue.GatewayUnreachable, IsRunning = false };
+        Assert.Equal(NodeConnectionState.Disconnected, status.ToConnectionState());
+    }
+
+    [Fact]
     public void ToConnectionState_DisconnectedWhenTokenMissingAndNotRunning()
     {
         var status = new NodeStatus { Issue = NodeIssue.TokenMissing, IsRunning = false };

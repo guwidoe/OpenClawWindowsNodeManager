@@ -44,6 +44,11 @@ public sealed class NodeStatus
 
     public NodeConnectionState ToConnectionState()
     {
+        if (Issue == NodeIssue.GatewayUnreachable)
+        {
+            return IsRunning ? NodeConnectionState.Degraded : NodeConnectionState.Disconnected;
+        }
+
         if (Issue != NodeIssue.None && Issue != NodeIssue.TokenMissing)
         {
             return NodeConnectionState.Error;

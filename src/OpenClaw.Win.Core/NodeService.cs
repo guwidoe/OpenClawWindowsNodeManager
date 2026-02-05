@@ -459,7 +459,7 @@ public sealed class NodeService
 
         if (result.TimedOut)
         {
-            return new GatewayProbeResult(null, null, "Gateway status check timed out.");
+            return new GatewayProbeResult(null, NodeIssue.GatewayUnreachable, "Gateway status check timed out.");
         }
 
         if (result.ExitCode != 0)
@@ -474,6 +474,10 @@ public sealed class NodeService
                 if (lowered.Contains("unauthorized") || lowered.Contains("token"))
                 {
                     return new GatewayProbeResult(null, NodeIssue.TokenInvalid, "Gateway token invalid or missing.");
+                }
+                if (IsGatewayNetworkError(lowered))
+                {
+                    return new GatewayProbeResult(null, NodeIssue.GatewayUnreachable, "Gateway unreachable.");
                 }
             }
 
@@ -533,6 +537,17 @@ public sealed class NodeService
     private static string EscapeArg(string value)
     {
         return value.Contains(' ') ? $"\"{value}\"" : value;
+    }
+
+    private static bool IsGatewayNetworkError(string output)
+    {
+        return output.Contains("econnrefused")
+               || output.Contains("enotfound")
+               || output.Contains("timeout")
+               || output.Contains("timed out")
+               || output.Contains("handshake")
+               || output.Contains("tls")
+               || output.Contains("certificate");
     }
 
     private static string CombineOutput(ProcessResult result)
