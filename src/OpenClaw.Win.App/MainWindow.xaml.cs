@@ -14,6 +14,8 @@ namespace OpenClaw.Win.App;
 
 public partial class MainWindow : Window
 {
+    private const string DefaultSshCommand = "/home/qido/.local/share/fnm/fnm exec --using 22 -- openclaw dashboard --no-open";
+
     public MainWindow()
     {
         InitializeComponent();
@@ -46,12 +48,14 @@ public partial class MainWindow : Window
 
             StatusDetails.Text = details;
             StatusError.Text = status.LastError ?? string.Empty;
+            UpdateTokenBanner(status);
         });
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         LoadConfig();
+        UpdateTokenStatus();
         _ = ((App)WpfApplication.Current).RefreshStatusAsync();
     }
 
@@ -74,6 +78,10 @@ public partial class MainWindow : Window
         ControlUiTextBox.Text = config.ControlUiUrl;
         RelayPortTextBox.Text = config.RelayPort.ToString();
         AutoStartCheckBox.IsChecked = config.AutoStartTray;
+        SshHostTextBox.Text = config.SshHost ?? string.Empty;
+        SshUserTextBox.Text = config.SshUser ?? string.Empty;
+        SshPortTextBox.Text = (config.SshPort == 0 ? 22 : config.SshPort).ToString();
+        SshCommandTextBox.Text = string.IsNullOrWhiteSpace(config.SshCommand) ? DefaultSshCommand : config.SshCommand;
     }
 
     private void SaveConfigButton_Click(object sender, RoutedEventArgs e)
@@ -99,6 +107,14 @@ public partial class MainWindow : Window
         }
 
         config.AutoStartTray = AutoStartCheckBox.IsChecked == true;
+        config.SshHost = string.IsNullOrWhiteSpace(SshHostTextBox.Text) ? null : SshHostTextBox.Text.Trim();
+        config.SshUser = string.IsNullOrWhiteSpace(SshUserTextBox.Text) ? null : SshUserTextBox.Text.Trim();
+        if (int.TryParse(SshPortTextBox.Text.Trim(), out var sshPort))
+        {
+            config.SshPort = sshPort;
+        }
+
+        config.SshCommand = string.IsNullOrWhiteSpace(SshCommandTextBox.Text) ? DefaultSshCommand : SshCommandTextBox.Text.Trim();
 
         app.ConfigStore.Save(config);
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
@@ -108,6 +124,8 @@ public partial class MainWindow : Window
             app.TokenStore.SaveToken(GatewayTokenBox.Password);
             GatewayTokenBox.Clear();
         }
+
+        UpdateTokenStatus();
 
         WpfMessageBox.Show("Settings saved.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
     }
@@ -202,6 +220,48 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OpenTokenSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        MainTabs.SelectedIndex = 0;
+        GatewayTokenBox.Focus();
+    }
+
+    private void OpenControlUiButton_Click(object sender, RoutedEventArgs e)
+    {
+        var app = (App)WpfApplication.Current;
+        var config = app.ConfigStore.Load();
+        if (string.IsNullOrWhiteSpace(config.ControlUiUrl))
+        {
+            WpfMessageBox.Show("Control UI URL is not set in Settings.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = config.ControlUiUrl,
+            UseShellExecute = true
+        });
+    }
+
+    private void UpdateTokenBanner(NodeStatus status)
+    {
+        TokenBanner.Visibility = status.Issue == NodeIssue.TokenMissing
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        PairingBanner.Visibility = status.Issue == NodeIssue.PairingRequired
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void UpdateTokenStatus()
+    {
+        var app = (App)WpfApplication.Current;
+        TokenSavedLabel.Text = app.TokenStore.HasToken
+            ? "Token stored securely (DPAPI)."
+            : "No token stored yet.";
+    }
+
     private async void InstallButton_Click(object sender, RoutedEventArgs e)
     {
         var app = (App)WpfApplication.Current;
@@ -285,5 +345,44 @@ public partial class MainWindow : Window
         using var entryStream = entry.Open();
         using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         fileStream.CopyTo(entryStream);
+    }
+
+    private async void FetchTokenButton_Click(object sender, RoutedEventArgs e)
+    {
+        var app = (App)WpfApplication.Current;
+        var config = app.ConfigStore.Load();
+
+        var host = string.IsNullOrWhiteSpace(SshHostTextBox.Text) ? config.SshHost : SshHostTextBox.Text.Trim();
+        var user = string.IsNullOrWhiteSpace(SshUserTextBox.Text) ? config.SshUser : SshUserTextBox.Text.Trim();
+        var command = string.IsNullOrWhiteSpace(SshCommandTextBox.Text) ? (config.SshCommand ?? DefaultSshCommand) : SshCommandTextBox.Text.Trim();
+        var port = config.SshPort;
+        if (int.TryParse(SshPortTextBox.Text.Trim(), out var parsedPort))
+        {
+            port = parsedPort;
+        }
+
+        SshFetchStatus.Text = "Connecting...";
+
+        var fetcher = new SshTokenFetcher();
+        var result = await fetcher.FetchAsync(host ?? string.Empty, user ?? string.Empty, port, command);
+
+        if (result.Success && !string.IsNullOrWhiteSpace(result.Token))
+        {
+            app.TokenStore.SaveToken(result.Token);
+            UpdateTokenStatus();
+            SshFetchStatus.Text = "Token saved.";
+            WpfMessageBox.Show("Gateway token fetched and saved.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else
+        {
+            var message = result.ErrorMessage ?? "Token fetch failed.";
+            SshFetchStatus.Text = message;
+            if (!string.IsNullOrWhiteSpace(result.Output))
+            {
+                message += "\n\nDetails:\n" + result.Output;
+            }
+
+            WpfMessageBox.Show(message, "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

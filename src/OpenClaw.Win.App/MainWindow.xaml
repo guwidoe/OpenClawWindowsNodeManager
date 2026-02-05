@@ -12,26 +12,52 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border Padding="12" Background="#F5F5F5" CornerRadius="8" BorderBrush="#DDDDDD" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
-                    <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Text="No status yet." />
-                    <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="#B00020" Text="" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
-                    <Button x:Name="ConnectButton" Width="90" Margin="0,0,8,0" Click="ConnectButton_Click">Connect</Button>
-                    <Button x:Name="DisconnectButton" Width="90" Margin="0,0,8,0" Click="DisconnectButton_Click">Disconnect</Button>
-                    <Button x:Name="RefreshButton" Width="90" Click="RefreshButton_Click">Refresh</Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <StackPanel Grid.Row="0">
+            <Border Padding="12" Background="#F5F5F5" CornerRadius="8" BorderBrush="#DDDDDD" BorderThickness="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
+                        <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Text="No status yet." />
+                        <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="#B00020" Text="" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
+                        <Button x:Name="ConnectButton" Width="90" Margin="0,0,8,0" Click="ConnectButton_Click">Connect</Button>
+                        <Button x:Name="DisconnectButton" Width="90" Margin="0,0,8,0" Click="DisconnectButton_Click">Disconnect</Button>
+                        <Button x:Name="RefreshButton" Width="90" Click="RefreshButton_Click">Refresh</Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-        <TabControl Grid.Row="1" Margin="0,16,0,0">
+            <Border x:Name="TokenBanner" Margin="0,10,0,0" Padding="10" Background="#FFF7E0" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+                <DockPanel>
+                    <TextBlock Text="Gateway token required to verify connection. Paste it in Settings → Connection."
+                               VerticalAlignment="Center" />
+                    <Button x:Name="OpenTokenSettingsButton"
+                            DockPanel.Dock="Right"
+                            Margin="12,0,0,0"
+                            Width="140"
+                            Click="OpenTokenSettingsButton_Click">Open Settings</Button>
+                </DockPanel>
+            </Border>
+
+            <Border x:Name="PairingBanner" Margin="0,10,0,0" Padding="10" Background="#E8F1FF" BorderBrush="#5B8BD9" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+                <DockPanel>
+                    <TextBlock Text="Gateway pairing required for this device. Approve it in the Control UI (Devices) or via CLI."
+                               VerticalAlignment="Center" />
+                    <Button x:Name="OpenControlUiButton"
+                            DockPanel.Dock="Right"
+                            Margin="12,0,0,0"
+                            Width="140"
+                            Click="OpenControlUiButton_Click">Open Control UI</Button>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+
+        <TabControl x:Name="MainTabs" Grid.Row="1" Margin="0,16,0,0">
             <TabItem Header="Connection">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="8">
@@ -69,7 +95,10 @@
                             <TextBox x:Name="ControlUiTextBox" Grid.Row="5" Grid.Column="1" Margin="0,2" />
 
                             <TextBlock Grid.Row="6" Grid.Column="0" Text="Gateway Token" VerticalAlignment="Center" />
-                            <PasswordBox x:Name="GatewayTokenBox" Grid.Row="6" Grid.Column="1" Margin="0,2" />
+                            <StackPanel Grid.Row="6" Grid.Column="1" Margin="0,2">
+                                <PasswordBox x:Name="GatewayTokenBox" />
+                                <TextBlock x:Name="TokenSavedLabel" FontSize="11" Foreground="#666666" Margin="0,4,0,0" />
+                            </StackPanel>
                         </Grid>
 
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
@@ -77,6 +106,42 @@
                             <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>
                             <Button x:Name="TestGatewayButton" Width="140" Margin="8,0,0,0" Click="TestGatewayButton_Click">Test Gateway</Button>
                         </StackPanel>
+
+                        <GroupBox Header="Fetch Token via SSH" Margin="0,16,0,0">
+                            <StackPanel Margin="8">
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="SSH Host" VerticalAlignment="Center" />
+                                    <TextBox x:Name="SshHostTextBox" Grid.Row="0" Grid.Column="1" Margin="0,2" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="SSH User" VerticalAlignment="Center" />
+                                    <TextBox x:Name="SshUserTextBox" Grid.Row="1" Grid.Column="1" Margin="0,2" />
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="SSH Port" VerticalAlignment="Center" />
+                                    <TextBox x:Name="SshPortTextBox" Grid.Row="2" Grid.Column="1" Margin="0,2" />
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="SSH Command" VerticalAlignment="Center" />
+                                    <TextBox x:Name="SshCommandTextBox" Grid.Row="3" Grid.Column="1" Margin="0,2" />
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="FetchTokenButton" Width="160" Click="FetchTokenButton_Click">Fetch Token via SSH</Button>
+                                    <TextBlock x:Name="SshFetchStatus" Margin="12,4,0,0" Foreground="#666666" />
+                                </StackPanel>
+                                <TextBlock Margin="0,6,0,0" FontSize="11" Foreground="#666666"
+                                           Text="Requires key-based SSH auth (BatchMode). Password prompts are not supported." />
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

@@ -9,6 +9,8 @@ namespace OpenClaw.Win.Core;
 
 public sealed class NodeService
 {
+    private sealed record GatewayProbeResult(bool? Connected, NodeIssue? Issue, string? ErrorMessage);
+
     private readonly ConfigStore _configStore;
     private readonly TokenStore _tokenStore;
     private readonly OpenClawCliLocator _cliLocator;
@@ -83,16 +85,22 @@ public sealed class NodeService
 
         if (status.IsRunning && !status.IsConnected && !string.IsNullOrWhiteSpace(gatewayHost))
         {
-        var connected = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
-        if (connected.HasValue)
-        {
-            status.IsConnected = connected.Value;
-        }
-        else if (!_tokenStore.HasToken && status.Issue == NodeIssue.None)
-        {
-            status.Issue = NodeIssue.TokenMissing;
-            status.LastError ??= "Gateway token required to verify connection.";
-        }
+            var probe = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
+            if (probe.Connected.HasValue)
+            {
+                status.IsConnected = probe.Connected.Value;
+            }
+
+            if (probe.Issue.HasValue && status.Issue == NodeIssue.None)
+            {
+                status.Issue = probe.Issue.Value;
+                status.LastError ??= probe.ErrorMessage;
+            }
+            else if (!probe.Connected.HasValue && !_tokenStore.HasToken && status.Issue == NodeIssue.None)
+            {
+                status.Issue = NodeIssue.TokenMissing;
+                status.LastError ??= "Gateway token required to verify connection.";
+            }
         }
 
         if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
@@ -247,17 +255,17 @@ public sealed class NodeService
         return result;
     }
 
-    private async Task<bool?> CheckConnectedViaGatewayAsync(string cliPath, string gatewayHost, int gatewayPort, bool gatewayUseTls, NodeIdentity identity, CancellationToken cancellationToken)
+    private async Task<GatewayProbeResult> CheckConnectedViaGatewayAsync(string cliPath, string gatewayHost, int gatewayPort, bool gatewayUseTls, NodeIdentity identity, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(gatewayHost))
         {
-            return null;
+            return new GatewayProbeResult(null, null, null);
         }
 
         var url = BuildGatewayUrl(gatewayHost, gatewayPort, gatewayUseTls);
         if (url == null)
         {
-            return null;
+            return new GatewayProbeResult(null, null, null);
         }
 
         var tokenArg = BuildTokenArg();
@@ -269,16 +277,20 @@ public sealed class NodeService
             if (!string.IsNullOrWhiteSpace(output))
             {
                 var lowered = output.ToLowerInvariant();
+                if (lowered.Contains("pairing required"))
+                {
+                    return new GatewayProbeResult(null, NodeIssue.PairingRequired, "Gateway pairing required.");
+                }
                 if (lowered.Contains("unauthorized") || lowered.Contains("token"))
                 {
-                    return null;
+                    return new GatewayProbeResult(null, NodeIssue.TokenInvalid, "Gateway token invalid or missing.");
                 }
             }
 
-            return null;
+            return new GatewayProbeResult(null, null, null);
         }
 
-        return NodesStatusParser.ContainsNode(output, identity);
+        return new GatewayProbeResult(NodesStatusParser.ContainsNode(output, identity), null, null);
     }
 
     private string BuildTokenArg()
@@ -388,20 +400,42 @@ public sealed class NodeService
     {
         AppPaths.EnsureDirectories();
         var builder = new StringBuilder();
-        builder.AppendLine($"[{DateTimeOffset.Now:O}] openclaw {arguments}");
+        builder.AppendLine($"[{DateTimeOffset.Now:O}] openclaw {RedactSecrets(arguments)}");
         if (!string.IsNullOrWhiteSpace(result.StdOut))
         {
-            builder.AppendLine(result.StdOut.TrimEnd());
+            builder.AppendLine(RedactSecrets(result.StdOut.TrimEnd()));
         }
 
         if (!string.IsNullOrWhiteSpace(result.StdErr))
         {
-            builder.AppendLine(result.StdErr.TrimEnd());
+            builder.AppendLine(RedactSecrets(result.StdErr.TrimEnd()));
         }
 
         builder.AppendLine($"exit={result.ExitCode} timeout={result.TimedOut}");
         builder.AppendLine(new string('-', 64));
 
         File.AppendAllText(AppPaths.NodeLogPath, builder.ToString());
+    }
+
+    private static string RedactSecrets(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return input;
+        }
+
+        var redacted = System.Text.RegularExpressions.Regex.Replace(
+            input,
+            "(--token\\s+)(\\S+)",
+            "$1<redacted>",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        redacted = System.Text.RegularExpressions.Regex.Replace(
+            redacted,
+            "(token=)([0-9a-fA-F]+)",
+            "$1<redacted>",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        return redacted;
     }
 }
