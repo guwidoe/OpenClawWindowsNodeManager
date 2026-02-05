@@ -10,6 +10,7 @@ namespace OpenClaw.Win.Core;
 public sealed class NodeService
 {
     private sealed record GatewayProbeResult(bool? Connected, NodeIssue? Issue, string? ErrorMessage);
+    private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(30);
 
     private readonly ConfigStore _configStore;
     private readonly TokenStore _tokenStore;
@@ -76,12 +77,18 @@ public sealed class NodeService
             status.Issue = NodeIssue.TokenMissing;
         }
 
-        var result = await RunOpenClawAsync(cliPath, "node status --json", cancellationToken).ConfigureAwait(false);
+        var result = await RunOpenClawAsync(cliPath, "node status --json", cancellationToken, StatusTimeout).ConfigureAwait(false);
         var combined = CombineOutput(result);
 
         var json = TryExtractJson(combined);
         var parsed = NodeStatusParser.Parse(json, json == null ? combined : null);
         MergeStatus(status, parsed);
+
+        if (result.TimedOut)
+        {
+            status.IsStatusCheckFailed = true;
+            status.LastError ??= "Status check timed out.";
+        }
 
         var foregroundIds = NodeProcessManager.FindForegroundNodeProcessIds();
         if (foregroundIds.Count > 0)
@@ -116,7 +123,7 @@ public sealed class NodeService
             status.LastError = null;
         }
 
-        if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
+        if (result.ExitCode != 0 && status.Issue == NodeIssue.None && !result.TimedOut)
         {
             status.Issue = NodeIssue.UnknownError;
             status.LastError ??= string.IsNullOrWhiteSpace(result.StdErr) ? "openclaw status failed." : result.StdErr.Trim();
@@ -268,7 +275,7 @@ public sealed class NodeService
         return last;
     }
 
-    private async Task<ProcessResult> RunOpenClawAsync(string cliPath, string arguments, CancellationToken cancellationToken)
+    private async Task<ProcessResult> RunOpenClawAsync(string cliPath, string arguments, CancellationToken cancellationToken, TimeSpan? timeoutOverride = null)
     {
         var env = new Dictionary<string, string?>();
         var token = _tokenStore.LoadToken();
@@ -280,7 +287,7 @@ public sealed class NodeService
         var result = await ProcessRunner.RunAsync(
             cliPath,
             arguments,
-            TimeSpan.FromSeconds(15),
+            timeoutOverride ?? TimeSpan.FromSeconds(15),
             environment: env,
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -302,8 +309,13 @@ public sealed class NodeService
         }
 
         var tokenArg = BuildTokenArg();
-        var result = await RunOpenClawAsync(cliPath, $"nodes status --connected --json --url {url}{tokenArg}", cancellationToken).ConfigureAwait(false);
+        var result = await RunOpenClawAsync(cliPath, $"nodes status --connected --json --url {url}{tokenArg}", cancellationToken, StatusTimeout).ConfigureAwait(false);
         var output = CombineOutput(result);
+
+        if (result.TimedOut)
+        {
+            return new GatewayProbeResult(null, null, "Gateway status check timed out.");
+        }
 
         if (result.ExitCode != 0)
         {

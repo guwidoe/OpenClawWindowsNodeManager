@@ -73,6 +73,13 @@ public partial class App : System.Windows.Application
         try
         {
             var status = await NodeService.GetStatusAsync();
+
+            if (status.IsStatusCheckFailed && _lastStatus != null)
+            {
+                Log.Warn($"Status check failed: {status.LastError ?? "unknown"}");
+                return;
+            }
+
             _lastStatus = status;
 
             if (_isBusy)
@@ -221,6 +228,11 @@ public partial class App : System.Windows.Application
         {
             _isBusy = false;
             _mainWindow?.SetBusy(false, null);
+        }
+
+        if (status.IsStatusCheckFailed && _lastStatus != null)
+        {
+            return _lastStatus;
         }
 
         _lastStatus = status;

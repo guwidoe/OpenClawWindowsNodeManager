@@ -17,6 +17,9 @@ public sealed class TrayIconService : IDisposable
     private readonly ToolStripMenuItem _disconnectItem;
     private readonly Dictionary<NodeConnectionState, Icon> _icons;
     private NodeConnectionState _lastState = NodeConnectionState.Unknown;
+    private NodeConnectionState _lastNotifiedState = NodeConnectionState.Unknown;
+    private DateTimeOffset _lastNotificationAt = DateTimeOffset.MinValue;
+    private readonly TimeSpan _notificationCooldown = TimeSpan.FromSeconds(30);
 
     public TrayIconService(
         Func<Task> onConnect,
@@ -99,9 +102,15 @@ public sealed class TrayIconService : IDisposable
 
         if (_lastState != state)
         {
-            _notifyIcon.BalloonTipTitle = "OpenClaw";
-            _notifyIcon.BalloonTipText = $"Status changed: {state}";
-            _notifyIcon.ShowBalloonTip(2000);
+            if (ShouldNotify(state))
+            {
+                _notifyIcon.BalloonTipTitle = "OpenClaw";
+                _notifyIcon.BalloonTipText = $"Status changed: {state}";
+                _notifyIcon.ShowBalloonTip(2000);
+                _lastNotificationAt = DateTimeOffset.UtcNow;
+                _lastNotifiedState = state;
+            }
+
             _lastState = state;
         }
     }
@@ -140,6 +149,22 @@ public sealed class TrayIconService : IDisposable
         }
 
         _notifyIcon.Text = text;
+    }
+
+    private bool ShouldNotify(NodeConnectionState state)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastNotificationAt < _notificationCooldown)
+        {
+            return false;
+        }
+
+        if (state == NodeConnectionState.Error && _lastNotifiedState == NodeConnectionState.Error)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private static Icon CreateCircleIcon(Color color)
