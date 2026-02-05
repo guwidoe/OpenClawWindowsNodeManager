@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _mainWindow;
     private DispatcherTimer? _pollTimer;
     private readonly SemaphoreSlim _statusLock = new(1, 1);
+    private readonly StatusStabilizer _statusStabilizer = new();
     private NodeStatus? _lastStatus;
     private bool _isBusy;
     private string? _busyTitle;
@@ -93,8 +94,9 @@ public partial class App : System.Windows.Application
                 return;
             }
 
-            _trayIcon?.UpdateStatus(status);
-            _mainWindow?.UpdateStatus(status);
+            var stable = _statusStabilizer.Stabilize(status);
+            _trayIcon?.UpdateStatus(stable);
+            _mainWindow?.UpdateStatus(stable);
         }
         catch (Exception ex)
         {
@@ -247,6 +249,7 @@ public partial class App : System.Windows.Application
             return _lastStatus;
         }
 
+        _statusStabilizer.Reset();
         _lastStatus = status;
         _trayIcon?.UpdateStatus(status);
         _mainWindow?.UpdateStatus(status);
