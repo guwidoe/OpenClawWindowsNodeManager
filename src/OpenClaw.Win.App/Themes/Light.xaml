@@ -21,6 +21,9 @@
     <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DCE6F1" />
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="#C9D3DE" />
     <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#1E2732" />
+    <SolidColorBrush x:Key="ButtonDisabledBackgroundBrush" Color="#E2E7ED" />
+    <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="#C9D3DE" />
+    <SolidColorBrush x:Key="ButtonDisabledForegroundBrush" Color="#8A97A6" />
 
     <SolidColorBrush x:Key="TabActiveBackgroundBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="TabInactiveBackgroundBrush" Color="#EEF2F7" />

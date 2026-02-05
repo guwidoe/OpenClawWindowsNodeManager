@@ -35,6 +35,7 @@ public static class ThemeManager
 
         var source = useDarkTheme ? DarkThemePath : LightThemePath;
         dictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.Relative) });
+        ApplyTitleBarTheme(useDarkTheme);
     }
 
     private static bool? GetSystemAppsUseLightTheme()
@@ -55,6 +56,19 @@ public static class ThemeManager
         catch
         {
             return null;
+        }
+    }
+
+    private static void ApplyTitleBarTheme(bool useDarkTheme)
+    {
+        if (System.Windows.Application.Current == null)
+        {
+            return;
+        }
+
+        foreach (Window window in System.Windows.Application.Current.Windows)
+        {
+            WindowThemeHelper.ApplyTitleBar(window, useDarkTheme);
         }
     }
 }

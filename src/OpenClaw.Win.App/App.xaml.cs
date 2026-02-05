@@ -58,10 +58,9 @@ public partial class App : System.Windows.Application
         SeedConfigIfMissing();
 
         var config = ConfigStore.Load();
-        ThemeManager.ApplyTheme(config.ThemePreference);
-
         _mainWindow = new MainWindow();
         _mainWindow.Hide();
+        ThemeManager.ApplyTheme(config.ThemePreference);
 
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
 

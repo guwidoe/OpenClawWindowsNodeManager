@@ -32,6 +32,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
                 <Setter Property="Padding" Value="6,4" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ComboBox">
@@ -84,10 +85,17 @@
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.6" />
+                                    <Setter TargetName="ToggleButton" Property="Background" Value="{DynamicResource ButtonDisabledBackgroundBrush}" />
+                                    <Setter TargetName="ToggleButton" Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundBrush}" />
+                                    <Setter Property="Opacity" Value="1" />
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+                                    <Setter TargetName="ToggleButton" Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                                    <Setter TargetName="ToggleButton" Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                    <Setter TargetName="ToggleButton" Property="BorderBrush" Value="{DynamicResource AccentMutedBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -101,9 +109,11 @@
                 <Style.Triggers>
                     <Trigger Property="IsHighlighted" Value="True">
                         <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                     </Trigger>
                     <Trigger Property="IsSelected" Value="True">
                         <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -130,7 +140,10 @@
                         <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
                     </Trigger>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Opacity" Value="0.5" />
+                        <Setter Property="Background" Value="{DynamicResource ButtonDisabledBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundBrush}" />
+                        <Setter Property="Opacity" Value="1" />
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -182,8 +195,29 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="ScrollViewer.Background" Value="{DynamicResource InputBackgroundBrush}" />
             </Style>
 
+            <Style TargetType="ListBox">
+                <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="ScrollViewer.Background" Value="{DynamicResource InputBackgroundBrush}" />
+            </Style>
+
+            <Style TargetType="ListBoxItem">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource TabActiveBackgroundBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
             <Style TargetType="ListViewItem">
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
