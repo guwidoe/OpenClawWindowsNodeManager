@@ -5,6 +5,85 @@
              Startup="OnStartup"
              Exit="OnExit">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Light.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="{DynamicResource WindowBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="FontFamily" Value="Bahnschrift" />
+            </Style>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            </Style>
+
+            <Style TargetType="TextBox">
+                <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+                <Setter Property="Padding" Value="6,4" />
+            </Style>
+
+            <Style TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            </Style>
+
+            <Style TargetType="PasswordBox">
+                <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+                <Setter Property="Padding" Value="6,4" />
+            </Style>
+
+            <Style TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+                <Setter Property="Padding" Value="10,4" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.5" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="TabControl">
+                <Setter Property="Background" Value="{DynamicResource TabInactiveBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource TabBorderBrush}" />
+            </Style>
+
+            <Style TargetType="TabItem">
+                <Setter Property="Background" Value="{DynamicResource TabInactiveBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource TabBorderBrush}" />
+                <Setter Property="Padding" Value="10,4" />
+                <Setter Property="Margin" Value="0,0,4,0" />
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource TabActiveBackgroundBrush}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="GroupBox">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+                <Setter Property="Padding" Value="6" />
+            </Style>
+
+            <Style TargetType="ProgressBar">
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="Background" Value="{DynamicResource TabInactiveBackgroundBrush}" />
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

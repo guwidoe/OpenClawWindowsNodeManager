@@ -6,5 +6,7 @@
   "controlUiUrl": "https://YOUR_GATEWAY_HOST/",
   "relayPort": 18792,
   "pollIntervalSeconds": 5,
-  "autoStartTray": true
+  "autoStartTray": true,
+  "captureNodeHostOutput": true,
+  "useDarkTheme": false
 }

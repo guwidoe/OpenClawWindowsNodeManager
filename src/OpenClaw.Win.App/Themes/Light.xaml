@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#F4F6F9" Offset="0" />
+        <GradientStop Color="#EEF2F7" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#D9E1EA" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1E2732" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5A6979" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#0FB5A7" />
+    <SolidColorBrush x:Key="AccentMutedBrush" Color="#0B8F84" />
+
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#C9D3DE" />
+
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#E7EEF5" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#DCE6F1" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#C9D3DE" />
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#1E2732" />
+
+    <SolidColorBrush x:Key="TabActiveBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TabInactiveBackgroundBrush" Color="#EEF2F7" />
+    <SolidColorBrush x:Key="TabBorderBrush" Color="#D9E1EA" />
+
+    <SolidColorBrush x:Key="WarningBannerBackgroundBrush" Color="#FFF6DF" />
+    <SolidColorBrush x:Key="WarningBannerBorderBrush" Color="#E1B84A" />
+    <SolidColorBrush x:Key="InfoBannerBackgroundBrush" Color="#E8F1FF" />
+    <SolidColorBrush x:Key="InfoBannerBorderBrush" Color="#5B8BD9" />
+
+    <SolidColorBrush x:Key="StatusConnectedBrush" Color="#1E9E5C" />
+    <SolidColorBrush x:Key="StatusDegradedBrush" Color="#C7901B" />
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#C4453C" />
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#6C7A89" />
+    <SolidColorBrush x:Key="StatusBusyBrush" Color="#3D6CF2" />
+</ResourceDictionary>

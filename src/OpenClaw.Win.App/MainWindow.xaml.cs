@@ -34,10 +34,10 @@ public partial class MainWindow : Window
             StatusLabel.Text = state.ToString().ToUpperInvariant();
             StatusLabel.Foreground = state switch
             {
-                NodeConnectionState.Connected => Brushes.Green,
-                NodeConnectionState.Degraded => Brushes.DarkGoldenrod,
-                NodeConnectionState.Error => Brushes.Firebrick,
-                _ => Brushes.DimGray
+                NodeConnectionState.Connected => GetBrush("StatusConnectedBrush", Brushes.Green),
+                NodeConnectionState.Degraded => GetBrush("StatusDegradedBrush", Brushes.DarkGoldenrod),
+                NodeConnectionState.Error => GetBrush("StatusErrorBrush", Brushes.Firebrick),
+                _ => GetBrush("StatusIdleBrush", Brushes.DimGray)
             };
 
             var details = status.GatewayHost == null
@@ -84,6 +84,7 @@ public partial class MainWindow : Window
         RelayPortTextBox.Text = config.RelayPort.ToString();
         AutoStartCheckBox.IsChecked = config.AutoStartTray;
         CaptureNodeOutputCheckBox.IsChecked = config.CaptureNodeHostOutput;
+        ThemeCheckBox.IsChecked = config.UseDarkTheme;
         SshHostTextBox.Text = config.SshHost ?? string.Empty;
         SshUserTextBox.Text = config.SshUser ?? string.Empty;
         SshPortTextBox.Text = (config.SshPort == 0 ? 22 : config.SshPort).ToString();
@@ -114,6 +115,7 @@ public partial class MainWindow : Window
 
         config.AutoStartTray = AutoStartCheckBox.IsChecked == true;
         config.CaptureNodeHostOutput = CaptureNodeOutputCheckBox.IsChecked == true;
+        config.UseDarkTheme = ThemeCheckBox.IsChecked == true;
         config.SshHost = string.IsNullOrWhiteSpace(SshHostTextBox.Text) ? null : SshHostTextBox.Text.Trim();
         config.SshUser = string.IsNullOrWhiteSpace(SshUserTextBox.Text) ? null : SshUserTextBox.Text.Trim();
         if (int.TryParse(SshPortTextBox.Text.Trim(), out var sshPort))
@@ -125,6 +127,7 @@ public partial class MainWindow : Window
 
         app.ConfigStore.Save(config);
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
+        ThemeManager.ApplyTheme(config.UseDarkTheme);
 
         if (!string.IsNullOrWhiteSpace(GatewayTokenBox.Password))
         {
@@ -287,12 +290,12 @@ public partial class MainWindow : Window
             : Visibility.Collapsed;
     }
 
-    public void SetBusy(bool isBusy, string? message)
+    public void SetBusy(bool isBusy, string? title, string? detail)
     {
         Dispatcher.Invoke(() =>
         {
             BusyPanel.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
-            BusyText.Text = message ?? string.Empty;
+            BusyText.Text = detail ?? string.Empty;
 
             ConnectButton.IsEnabled = !isBusy;
             DisconnectButton.IsEnabled = !isBusy;
@@ -305,10 +308,10 @@ public partial class MainWindow : Window
             OpenNodeHostLogButton.IsEnabled = !isBusy;
             RefreshNodeHostLogButton.IsEnabled = !isBusy;
 
-            if (isBusy && !string.IsNullOrWhiteSpace(message))
+            if (isBusy && !string.IsNullOrWhiteSpace(title))
             {
-                StatusLabel.Text = message.ToUpperInvariant();
-                StatusLabel.Foreground = Brushes.DarkSlateBlue;
+                StatusLabel.Text = title.ToUpperInvariant();
+                StatusLabel.Foreground = GetBrush("StatusBusyBrush", Brushes.DarkSlateBlue);
                 StatusError.Text = string.Empty;
             }
             else if (_lastStatus != null)
@@ -316,6 +319,16 @@ public partial class MainWindow : Window
                 UpdateStatus(_lastStatus);
             }
         });
+    }
+
+    private System.Windows.Media.Brush GetBrush(string key, System.Windows.Media.Brush fallback)
+    {
+        if (TryFindResource(key) is System.Windows.Media.Brush brush)
+        {
+            return brush;
+        }
+
+        return fallback;
     }
 
     private void UpdateTokenStatus()

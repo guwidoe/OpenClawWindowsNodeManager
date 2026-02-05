@@ -18,6 +18,9 @@ public partial class App : System.Windows.Application
     private readonly SemaphoreSlim _statusLock = new(1, 1);
     private NodeStatus? _lastStatus;
     private bool _isBusy;
+    private string? _busyTitle;
+    private DateTimeOffset _busyStart;
+    private int _busyStep;
 
     public ConfigStore ConfigStore { get; private set; } = null!;
     public TokenStore TokenStore { get; private set; } = null!;
@@ -39,10 +42,12 @@ public partial class App : System.Windows.Application
 
         SeedConfigIfMissing();
 
+        var config = ConfigStore.Load();
+        ThemeManager.ApplyTheme(config.UseDarkTheme);
+
         _mainWindow = new MainWindow();
         _mainWindow.Hide();
 
-        var config = ConfigStore.Load();
         AutoStartManager.ApplyAutoStart(config.AutoStartTray);
 
         _trayIcon = new TrayIconService(
@@ -205,13 +210,19 @@ public partial class App : System.Windows.Application
         }
 
         _isBusy = true;
-        UpdateBusyMessage(message);
+        _busyTitle = message;
+        _busyStart = DateTimeOffset.UtcNow;
+        _busyStep = 1;
+        UpdateBusyMessage(message, FormatBusyDetail(message, _busyStep));
         var progress = new Progress<string>(progressMessage =>
         {
-            if (!string.IsNullOrWhiteSpace(progressMessage))
+            if (string.IsNullOrWhiteSpace(progressMessage))
             {
-                UpdateBusyMessage(progressMessage);
+                return;
             }
+
+            _busyStep++;
+            UpdateBusyMessage(message, FormatBusyDetail(progressMessage, _busyStep));
         });
 
         NodeStatus status;
@@ -227,7 +238,7 @@ public partial class App : System.Windows.Application
         finally
         {
             _isBusy = false;
-            _mainWindow?.SetBusy(false, null);
+            _mainWindow?.SetBusy(false, null, null);
         }
 
         if (status.IsStatusCheckFailed && _lastStatus != null)
@@ -241,15 +252,22 @@ public partial class App : System.Windows.Application
         return status;
     }
 
-    private void UpdateBusyMessage(string message)
+    private void UpdateBusyMessage(string title, string detail)
     {
         if (!_isBusy)
         {
             return;
         }
 
-        _trayIcon?.SetBusy(message);
-        _mainWindow?.SetBusy(true, message);
+        _trayIcon?.SetBusy(detail);
+        _mainWindow?.SetBusy(true, title, detail);
+    }
+
+    private string FormatBusyDetail(string message, int step)
+    {
+        var elapsed = DateTimeOffset.UtcNow - _busyStart;
+        var elapsedText = elapsed.ToString(@"mm\:ss");
+        return $"{step}. {message} ({elapsedText})";
     }
 
     private void SeedConfigIfMissing()

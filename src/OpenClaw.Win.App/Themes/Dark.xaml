@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#0B1016" Offset="0" />
+        <GradientStop Color="#0F1620" Offset="0.6" />
+        <GradientStop Color="#0A0E14" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#141C26" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#233042" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E6EDF3" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A9B4C2" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="#3AD6C7" />
+    <SolidColorBrush x:Key="AccentMutedBrush" Color="#2AA69B" />
+
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#0F141C" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#2C3A4E" />
+
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#203040" />
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#2A3B4F" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#30445C" />
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#E6EDF3" />
+
+    <SolidColorBrush x:Key="TabActiveBackgroundBrush" Color="#16202B" />
+    <SolidColorBrush x:Key="TabInactiveBackgroundBrush" Color="#0F141C" />
+    <SolidColorBrush x:Key="TabBorderBrush" Color="#233042" />
+
+    <SolidColorBrush x:Key="WarningBannerBackgroundBrush" Color="#2A2414" />
+    <SolidColorBrush x:Key="WarningBannerBorderBrush" Color="#6E5B21" />
+    <SolidColorBrush x:Key="InfoBannerBackgroundBrush" Color="#182230" />
+    <SolidColorBrush x:Key="InfoBannerBorderBrush" Color="#2E4A72" />
+
+    <SolidColorBrush x:Key="StatusConnectedBrush" Color="#42D392" />
+    <SolidColorBrush x:Key="StatusDegradedBrush" Color="#F5C542" />
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#FF6B6B" />
+    <SolidColorBrush x:Key="StatusIdleBrush" Color="#93A0B0" />
+    <SolidColorBrush x:Key="StatusBusyBrush" Color="#6AA6FF" />
+</ResourceDictionary>

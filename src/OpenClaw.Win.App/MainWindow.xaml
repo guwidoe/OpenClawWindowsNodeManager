@@ -5,15 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenClaw.Win.App"
         mc:Ignorable="d"
-        Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760">
-    <Grid Margin="16">
+        Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <Grid Margin="16" Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <Border Padding="12" Background="#F5F5F5" CornerRadius="8" BorderBrush="#DDDDDD" BorderThickness="1">
+            <Border Padding="12" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -21,8 +22,8 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
-                        <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Text="No status yet." />
-                        <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="#B00020" Text="" />
+                        <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="No status yet." />
+                        <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="{DynamicResource StatusErrorBrush}" Text="" />
                         <StackPanel x:Name="BusyPanel" Margin="0,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
                             <ProgressBar Width="140" Height="10" IsIndeterminate="True" Margin="0,0,8,0" />
                             <TextBlock x:Name="BusyText" VerticalAlignment="Center" />
@@ -36,7 +37,7 @@
                 </Grid>
             </Border>
 
-            <Border x:Name="TokenBanner" Margin="0,10,0,0" Padding="10" Background="#FFF7E0" BorderBrush="#E0B000" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+            <Border x:Name="TokenBanner" Margin="0,10,0,0" Padding="10" Background="{DynamicResource WarningBannerBackgroundBrush}" BorderBrush="{DynamicResource WarningBannerBorderBrush}" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
                 <DockPanel>
                     <TextBlock Text="Gateway token required to verify connection. Paste it in Settings → Connection."
                                VerticalAlignment="Center" />
@@ -48,7 +49,7 @@
                 </DockPanel>
             </Border>
 
-            <Border x:Name="PairingBanner" Margin="0,10,0,0" Padding="10" Background="#E8F1FF" BorderBrush="#5B8BD9" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+            <Border x:Name="PairingBanner" Margin="0,10,0,0" Padding="10" Background="{DynamicResource InfoBannerBackgroundBrush}" BorderBrush="{DynamicResource InfoBannerBorderBrush}" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
                 <DockPanel>
                     <TextBlock Text="Gateway pairing required for this device. Approve it in the Control UI (Devices) or via CLI."
                                VerticalAlignment="Center" />
@@ -101,12 +102,13 @@
                             <TextBlock Grid.Row="6" Grid.Column="0" Text="Gateway Token" VerticalAlignment="Center" />
                             <StackPanel Grid.Row="6" Grid.Column="1" Margin="0,2">
                                 <PasswordBox x:Name="GatewayTokenBox" />
-                                <TextBlock x:Name="TokenSavedLabel" FontSize="11" Foreground="#666666" Margin="0,4,0,0" />
+                                <TextBlock x:Name="TokenSavedLabel" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
                             </StackPanel>
                         </Grid>
 
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <CheckBox x:Name="AutoStartCheckBox" Content="Start tray app at login" Margin="0,0,12,0" />
+                            <CheckBox x:Name="ThemeCheckBox" Content="Use dark theme" Margin="0,0,12,0" />
                             <Button x:Name="SaveConfigButton" Width="110" Click="SaveConfigButton_Click">Save</Button>
                             <Button x:Name="TestGatewayButton" Width="140" Margin="8,0,0,0" Click="TestGatewayButton_Click">Test Gateway</Button>
                         </StackPanel>
@@ -140,9 +142,9 @@
 
                                 <StackPanel Orientation="Horizontal">
                                     <Button x:Name="FetchTokenButton" Width="160" Click="FetchTokenButton_Click">Fetch Token via SSH</Button>
-                                    <TextBlock x:Name="SshFetchStatus" Margin="12,4,0,0" Foreground="#666666" />
+                                    <TextBlock x:Name="SshFetchStatus" Margin="12,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
                                 </StackPanel>
-                                <TextBlock Margin="0,6,0,0" FontSize="11" Foreground="#666666"
+                                <TextBlock Margin="0,6,0,0" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                            Text="Requires key-based SSH auth (BatchMode). Password prompts are not supported." />
                             </StackPanel>
                         </GroupBox>
@@ -164,7 +166,7 @@
                               Content="Hide node host window and capture output" />
                     <TextBlock Margin="0,4,0,0"
                                FontSize="11"
-                               Foreground="#666666"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="Captures the node host console output to a local log file and hides the task window." />
                 </StackPanel>
             </TabItem>
