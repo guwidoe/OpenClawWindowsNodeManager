@@ -63,6 +63,8 @@ public partial class MainWindow : Window
         UpdateTokenStatus();
         RefreshNodeHostLog();
         InitializeApprovals();
+        _ = InitializeCanvasAsync();
+        _ = InitializeRelayStatusAsync();
         _ = ((App)WpfApplication.Current).RefreshStatusAsync();
     }
 
@@ -152,6 +154,8 @@ public partial class MainWindow : Window
             await app.NodeService.EnsureNodeHostOutputCaptureAsync();
         }
 
+        _ = UpdateRelayStatusAsync();
+
         WpfMessageBox.Show("Settings saved.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
@@ -192,14 +196,6 @@ public partial class MainWindow : Window
         }
 
         WpfMessageBox.Show(message, "Gateway Test", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    private async void VerifyRelayButton_Click(object sender, RoutedEventArgs e)
-    {
-        var app = (App)WpfApplication.Current;
-        var config = app.ConfigStore.Load();
-        var ok = await app.ChromeRelayService.VerifyRelayAsync(config.RelayPort);
-        WpfMessageBox.Show(ok ? "Relay reachable." : "Relay not reachable.", "Chrome Relay", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void OpenExtensionsButton_Click(object sender, RoutedEventArgs e)
@@ -294,6 +290,13 @@ public partial class MainWindow : Window
             RefreshApprovalsButton.IsEnabled = !isBusy;
             RefreshApprovalHistoryButton.IsEnabled = !isBusy;
             OpenApprovalLogButton.IsEnabled = !isBusy;
+            CanvasReloadButton.IsEnabled = !isBusy;
+            CanvasSnapshotButton.IsEnabled = !isBusy;
+            CanvasOpenSnapshotButton.IsEnabled = !isBusy;
+            CanvasEvalButton.IsEnabled = !isBusy;
+            CaptureScreenButton.IsEnabled = !isBusy;
+            StartRecordingButton.IsEnabled = !isBusy && !((App)WpfApplication.Current).ScreenRecorder.IsRecording;
+            StopRecordingButton.IsEnabled = !isBusy && ((App)WpfApplication.Current).ScreenRecorder.IsRecording;
             UpdateApprovalButtons();
 
             if (isBusy && !string.IsNullOrWhiteSpace(title))

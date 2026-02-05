@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OpenClaw.Win.App"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760"
         Background="{DynamicResource WindowBackgroundBrush}">
@@ -191,6 +192,95 @@
                 </StackPanel>
             </TabItem>
 
+            <TabItem Header="Canvas">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Padding="10"
+                            Background="{DynamicResource CardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="CanvasStatusText" FontWeight="SemiBold" Text="Canvas not initialized." />
+                                <TextBlock x:Name="CanvasStatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Text="Open this tab to load the embedded canvas." />
+                            </StackPanel>
+                            <Button x:Name="CanvasInstallButton"
+                                    Grid.Column="1"
+                                    Width="150"
+                                    Margin="12,0,0,0"
+                                    Visibility="Collapsed"
+                                    Click="CanvasInstallButton_Click">Install WebView2</Button>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Margin="0,12,0,12"
+                            Background="{DynamicResource CardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <Grid>
+                            <wv2:WebView2 x:Name="CanvasWebView" />
+                            <TextBlock x:Name="CanvasOverlayText"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Text="Canvas will appear here." />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="2">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="CanvasReloadButton" Width="120" Margin="0,0,8,0" Click="CanvasReloadButton_Click">Reload</Button>
+                            <Button x:Name="CanvasSnapshotButton" Width="140" Margin="0,0,8,0" Click="CanvasSnapshotButton_Click">Capture Snapshot</Button>
+                            <Button x:Name="CanvasOpenSnapshotButton" Width="160" Click="CanvasOpenSnapshotButton_Click">Open Snapshot Folder</Button>
+                        </StackPanel>
+                        <TextBlock x:Name="CanvasSnapshotStatus" Margin="0,6,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <GroupBox Header="canvas.eval" Margin="0,12,0,0">
+                            <StackPanel Margin="8">
+                                <TextBox x:Name="CanvasEvalInput" Height="60" TextWrapping="Wrap" AcceptsReturn="True" />
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <Button x:Name="CanvasEvalButton" Width="120" Click="CanvasEvalButton_Click">Run JS</Button>
+                                    <TextBlock x:Name="CanvasEvalStatus" Margin="12,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+                                <TextBox x:Name="CanvasEvalOutput"
+                                         Height="80"
+                                         Margin="0,8,0,0"
+                                         FontFamily="Consolas"
+                                         FontSize="12"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Screen Capture" Margin="0,12,0,0">
+                            <StackPanel Margin="8">
+                                <StackPanel Orientation="Horizontal">
+                                    <ComboBox x:Name="ScreenSelectComboBox" Width="220" Margin="0,0,8,0" />
+                                    <Button x:Name="CaptureScreenButton" Width="140" Margin="0,0,8,0" Click="CaptureScreenButton_Click">Capture Screen</Button>
+                                    <Button x:Name="StartRecordingButton" Width="140" Margin="0,0,8,0" Click="StartRecordingButton_Click">Start Recording</Button>
+                                    <Button x:Name="StopRecordingButton" Width="140" Click="StopRecordingButton_Click">Stop Recording</Button>
+                                </StackPanel>
+                                <TextBlock x:Name="ScreenCaptureStatus" Margin="0,6,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Approvals">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="8">
@@ -258,7 +348,18 @@
 
             <TabItem Header="Chrome Relay">
                 <StackPanel Margin="8">
-                    <Grid>
+                    <Border Padding="10"
+                            Background="{DynamicResource CardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel>
+                            <TextBlock x:Name="RelayStatusTitle" FontWeight="SemiBold" Text="Relay status unknown." />
+                            <TextBlock x:Name="RelayStatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Text="Click Verify to check the relay." />
+                        </StackPanel>
+                    </Border>
+                    <Grid Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="160" />
                             <ColumnDefinition Width="*" />

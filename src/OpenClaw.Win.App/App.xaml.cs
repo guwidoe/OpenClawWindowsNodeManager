@@ -32,6 +32,10 @@ public partial class App : System.Windows.Application
     public ExecApprovalHistoryStore ApprovalHistoryStore { get; private set; } = null!;
     public ExecApprovalService ExecApprovalService { get; private set; } = null!;
     public SystemNotificationBridge SystemNotifications { get; private set; } = null!;
+    public CanvasService CanvasService { get; private set; } = null!;
+    public IScreenCaptureService ScreenCaptureService { get; private set; } = null!;
+    public ScreenRecorder ScreenRecorder { get; private set; } = null!;
+    public BrowserRelayStatusService BrowserRelayStatusService { get; private set; } = null!;
     private NodeStatus? _lastNotifiedStatus;
 
     private void OnStartup(object sender, StartupEventArgs e)
@@ -46,6 +50,10 @@ public partial class App : System.Windows.Application
         ChromeRelayService = new ChromeRelayService();
         ApprovalHistoryStore = new ExecApprovalHistoryStore();
         ExecApprovalService = new ExecApprovalService(ApprovalHistoryStore, () => ConfigStore.Load().ExecApprovalPolicy);
+        CanvasService = new CanvasService();
+        ScreenCaptureService = new ScreenCaptureService(new DefaultScreenInfoProvider(), new DefaultScreenImageProvider());
+        ScreenRecorder = new ScreenRecorder(ScreenCaptureService);
+        BrowserRelayStatusService = new BrowserRelayStatusService(ChromeRelayService);
 
         SeedConfigIfMissing();
 
