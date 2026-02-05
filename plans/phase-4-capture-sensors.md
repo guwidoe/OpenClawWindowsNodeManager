@@ -1,31 +1,30 @@
-Ôªø# Phase 4 ‚Äì Screen, Camera & Location
+# Phase 4 ñ Camera & Location
 
 ## Goal
-Enable full desktop capture and sensor capabilities where they make sense on Windows, with explicit user consent and clear privacy controls.
+Enable camera and location capabilities where they make sense on Windows, with explicit user consent and clear privacy controls.
 
 ## Scope (What Users Get)
-- **screen.record** and/or screenshot capture for Windows.
 - **camera.snap / camera.clip** when hardware is available.
 - **location.get** using Windows location services (if enabled).
-- Clear in‚Äëapp permission UI for all capture/sensor features.
+- Clear in-app permission UI for all camera/location features.
 
 ## User Experience Notes
 - All capture actions must be explicit and clearly indicated.
 - Users can revoke permissions at any time.
-- If hardware isn‚Äôt present or permissions are disabled, show a simple explanation.
+- If hardware isnít present or permissions are disabled, show a simple explanation.
 
 ## Out of Scope (Explicitly Deferred)
 - SMS send (not applicable on Windows)
 
 ## Acceptance Criteria
-- Screen capture works on multi‚Äëmonitor setups.
-- Camera and location features gracefully degrade when unavailable.
-- Users are always aware when capture is active.
+- Camera features work when hardware is present.
+- Location features work when Windows location services are enabled.
+- Features gracefully degrade when unavailable.
 
 ## Risks / Dependencies
 - OS permission prompts and group policy restrictions.
-- Multi‚Äëmonitor edge cases and performance.
+- Hardware variability on desktops.
 
 ## Open Questions
-- Should capture be limited to a specific window by default?
-- How should we indicate ‚Äúrecording in progress‚Äù globally (tray badge, toast, UI banner)?
+- Should camera access be limited to a single default device by default?
+- How should the UI indicate ìcamera activeî or ìlocation activeî globally?

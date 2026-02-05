@@ -1,12 +1,13 @@
 ﻿# Phase 1 – Core Stability & Management
 
 ## Goal
-Deliver a reliable, no-surprises Windows node companion that makes connect/disconnect safe, obvious, and repeatable for daily use.
+Deliver a reliable, no‑surprises Windows node companion that makes connect/disconnect safe, obvious, and repeatable for daily use, without relying on the dashboard.
 
 ## Scope (What Users Get)
 - One‑click connect/disconnect that consistently works without opening terminals.
 - Clear status that does not flap on transient errors.
-- Pairing and token flows that are easy to complete and visible in the UI.
+- Hidden background runner that survives the settings window closing.
+- Minimal pairing/token flow required for connectivity (not a full dashboard replacement).
 - Built‑in logs and diagnostics suitable for support requests.
 - CLI parity for status/connect/disconnect/diagnostics (scriptable).
 
@@ -14,6 +15,7 @@ Deliver a reliable, no-surprises Windows node companion that makes connect/disco
 - Default posture remains **disconnected** until the user explicitly connects.
 - Status must be clear across tray + settings UI (Connected/Disconnected/Degraded/Error).
 - Error feedback is actionable and non‑spammy (rate limited notifications).
+- Pairing and token flows are present but intentionally minimal; deep management stays in the dashboard.
 - Autostart is user‑controlled and discoverable (already in Settings).
 
 ## Out of Scope (Explicitly Deferred)
