@@ -41,7 +41,8 @@ public sealed class HiddenNodeHostRunner : INodeHostRunner
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             };
 
             if (!string.IsNullOrWhiteSpace(token))
