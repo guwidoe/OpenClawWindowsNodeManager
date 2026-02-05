@@ -18,6 +18,9 @@ This companion makes the Windows node feel **first-class**: a one-click tray tog
 - In-app banners for missing tokens and pairing requirements.
 - Exec approvals UI with local history and policy controls.
 - System notifications for key events (toggleable).
+- Embedded Canvas (WebView2) with snapshots and JS eval.
+- Screen capture + lightweight recording with visible indicator.
+- Browser relay status with guided verification.
 - CLI for automation: `status`, `connect`, `disconnect`, `toggle`, `configure`, `install`, `uninstall`, `logs`, `doctor`.
 
 ## Repo Layout
@@ -103,4 +106,4 @@ The companion uses the upstream CLI for lifecycle management:
 - Pairing for the Control UI does **not** automatically pair the Windows CLI device. The app needs its own device approval to query `nodes status`.
 
 ## What’s Next
-- Canvas/WebView + screen capture for full visual parity.
+- Capture sensors (camera/location/SMS) once permissions UX is defined.

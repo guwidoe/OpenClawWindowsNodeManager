@@ -17,13 +17,19 @@
 
 # TODO (Phase 3 In Progress)
 
-- [ ] Confirm scope choices (Canvas tab vs window, WebView2 dependency, initial focus)
-- [ ] Add WebView2 dependency + runtime availability check + guidance UI
-- [ ] Canvas UI surface (tab + loading/empty states)
-- [ ] Canvas service contracts (`canvas.eval`, `canvas.snapshot`)
-- [ ] A2UI render pipeline into canvas
-- [ ] Snapshot implementation (WebView capture)
-- [ ] Screen capture service (multi-monitor + visible indicator)
-- [ ] Browser relay UX upgrades (status + verify + guidance)
-- [ ] Add tests for canvas/capture logic (agent-testable)
-- [ ] Run full `dotnet test`
+- [x] Confirm scope choices (Canvas tab vs window, WebView2 dependency, initial focus)
+- [x] Add WebView2 dependency + runtime availability check + guidance UI
+- [x] Canvas UI surface (tab + loading/empty states)
+- [x] Canvas service contracts (`canvas.eval`, `canvas.snapshot`)
+- [x] A2UI render pipeline into canvas
+- [x] Snapshot implementation (WebView capture)
+- [x] Screen capture service (multi-monitor + visible indicator)
+- [x] Browser relay UX upgrades (status + verify + guidance)
+- [x] Add tests for canvas/capture logic (agent-testable)
+- [x] Run full `dotnet test`
+
+# TODO (Phase 4 Not Started)
+
+- [ ] Camera capture support
+- [ ] Location permissions + telemetry
+- [ ] SMS integration (optional)
