@@ -58,8 +58,8 @@ Files:
 
 ### Preconfigured settings
 If `personal-config.json` exists alongside the tray app binary, the app will seed
-`config.json` on first launch. This repo includes a prefilled `personal-config.json`
-for the current gateway host, port, and Control UI URL.
+`config.json` on first launch. Use `personal-config.example.json` as a template
+and keep your personal `personal-config.json` untracked.
 
 ## Security Notes
 - Gateway token is stored using Windows DPAPI (CurrentUser scope).

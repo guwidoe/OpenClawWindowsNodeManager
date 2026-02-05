@@ -1,0 +1,10 @@
+﻿{
+  "gatewayHost": "YOUR_GATEWAY_HOST",
+  "gatewayPort": 443,
+  "useTls": true,
+  "displayName": "YOUR_WINDOWS_NODE",
+  "controlUiUrl": "https://YOUR_GATEWAY_HOST/",
+  "relayPort": 18792,
+  "pollIntervalSeconds": 5,
+  "autoStartTray": true
+}

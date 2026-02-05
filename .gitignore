@@ -38,6 +38,9 @@ packages/
 # Publish outputs
 **/publish/
 
+# Personal config
+**/personal-config.json
+
 # Misc
 *.cache
 *.tmp

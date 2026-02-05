@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="personal-config.json">
+    <Content Include="personal-config.example.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
