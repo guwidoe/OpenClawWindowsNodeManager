@@ -195,6 +195,7 @@
                     <TextBlock Text="App logs and node host logs are stored locally." Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal">
                         <Button Width="140" Margin="0,0,8,0" Click="OpenLogsButton_Click">Open Logs Folder</Button>
+                        <Button Width="140" Margin="0,0,8,0" Click="OpenNodeLogButton_Click">Open Node Log</Button>
                         <Button Width="160" Click="ExportDiagnosticsButton_Click">Export Diagnostics</Button>
                     </StackPanel>
                     <TextBlock x:Name="DiagnosticsStatus" Margin="0,8,0,0" />

@@ -238,6 +238,22 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OpenNodeLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!File.Exists(AppPaths.NodeLogPath))
+        {
+            WpfMessageBox.Show("Node log not found yet.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "notepad.exe",
+            Arguments = AppPaths.NodeLogPath,
+            UseShellExecute = true
+        });
+    }
+
     private void OpenNodeHostLogButton_Click(object sender, RoutedEventArgs e)
     {
         if (!File.Exists(AppPaths.NodeHostLogPath))
