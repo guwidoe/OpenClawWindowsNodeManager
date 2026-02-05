@@ -13,6 +13,10 @@ public sealed class NodeService
     private static readonly TimeSpan StatusTimeout = TimeSpan.FromSeconds(30);
     private System.Diagnostics.Process? _hiddenNodeProcess;
     private readonly object _processLock = new();
+    private static readonly string NodeCmdPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        ".openclaw",
+        "node.cmd");
 
     private readonly ConfigStore _configStore;
     private readonly TokenStore _tokenStore;
@@ -96,6 +100,10 @@ public sealed class NodeService
         if (foregroundIds.Count > 0)
         {
             status.HasForegroundProcess = true;
+            status.IsRunning = true;
+        }
+        else if (IsHiddenProcessRunning())
+        {
             status.IsRunning = true;
         }
 
@@ -242,6 +250,12 @@ public sealed class NodeService
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
         progress?.Report("Waiting for shutdown...");
         var status = await WaitForStoppedAsync(waitTimeout, cancellationToken, progress).ConfigureAwait(false);
+
+        if (IsHiddenProcessRunning())
+        {
+            progress?.Report("Stopping hidden node host...");
+            StopHiddenNodeHost();
+        }
 
         progress?.Report("Closing foreground node...");
         var killed = NodeProcessManager.KillForegroundNodeProcesses();
@@ -567,7 +581,10 @@ public sealed class NodeService
         try
         {
             var runArgs = BuildRunArgs(config);
-            var (fileName, arguments) = BuildCliInvocation(cliPath, runArgs);
+            var openclawMjs = ResolveOpenClawMjsPath(cliPath);
+            var (fileName, arguments) = openclawMjs == null
+                ? BuildCliInvocation(cliPath, runArgs)
+                : (ResolveNodeExePath(), $"\"{openclawMjs}\" {runArgs}");
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = fileName,
@@ -595,7 +612,7 @@ public sealed class NodeService
                 return false;
             }
 
-            AttachNodeHostLogging(process);
+            AttachNodeHostLogging(process, fileName, arguments);
 
             lock (_processLock)
             {
@@ -611,7 +628,7 @@ public sealed class NodeService
         }
     }
 
-    private static void AttachNodeHostLogging(System.Diagnostics.Process process)
+    private static void AttachNodeHostLogging(System.Diagnostics.Process process, string fileName, string arguments)
     {
         AppPaths.EnsureDirectories();
         var logPath = AppPaths.NodeHostLogPath;
@@ -621,6 +638,8 @@ public sealed class NodeService
             var entry = $"[{DateTimeOffset.Now:O}] {prefix}{line}{Environment.NewLine}";
             File.AppendAllText(logPath, entry);
         }
+
+        AppendLine(string.Empty, $"START {fileName} {arguments}");
 
         process.OutputDataReceived += (_, args) =>
         {
@@ -647,6 +666,33 @@ public sealed class NodeService
         process.BeginErrorReadLine();
     }
 
+    private void StopHiddenNodeHost()
+    {
+        lock (_processLock)
+        {
+            if (_hiddenNodeProcess == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!_hiddenNodeProcess.HasExited)
+                {
+                    _hiddenNodeProcess.Kill(true);
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+            finally
+            {
+                _hiddenNodeProcess = null;
+            }
+        }
+    }
+
     private static (string FileName, string Arguments) BuildCliInvocation(string cliPath, string arguments)
     {
         var lower = cliPath.ToLowerInvariant();
@@ -660,6 +706,61 @@ public sealed class NodeService
         }
 
         return (cliPath, arguments);
+    }
+
+    private static string? ResolveOpenClawMjsPath(string cliPath)
+    {
+        var directory = Path.GetDirectoryName(cliPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return null;
+        }
+
+        var mjsPath = Path.Combine(directory, "node_modules", "openclaw", "openclaw.mjs");
+        return File.Exists(mjsPath) ? mjsPath : null;
+    }
+
+    private static string ResolveNodeExePath()
+    {
+        var fromCmd = TryResolveNodeExeFromNodeCmd();
+        if (!string.IsNullOrWhiteSpace(fromCmd))
+        {
+            return fromCmd!;
+        }
+
+        return "node";
+    }
+
+    private static string? TryResolveNodeExeFromNodeCmd()
+    {
+        if (!File.Exists(NodeCmdPath))
+        {
+            return null;
+        }
+
+        foreach (var line in File.ReadAllLines(NodeCmdPath))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            var match = System.Text.RegularExpressions.Regex.Match(
+                trimmed,
+                "\"([^\"]*node\\.exe)\"",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                var path = match.Groups[1].Value;
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static string BuildRunArgs(AppConfig config)
