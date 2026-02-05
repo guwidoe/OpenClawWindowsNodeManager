@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -136,6 +136,26 @@ public static class Program
             tokenStore.SaveToken(token);
         }
 
+        if (options.ContainsKey("dark-theme"))
+        {
+            config.UseDarkTheme = true;
+        }
+
+        if (options.ContainsKey("light-theme"))
+        {
+            config.UseDarkTheme = false;
+        }
+
+        if (options.ContainsKey("tray-notifications"))
+        {
+            config.EnableTrayNotifications = true;
+        }
+
+        if (options.ContainsKey("no-tray-notifications"))
+        {
+            config.EnableTrayNotifications = false;
+        }
+
         configStore.Save(config);
         Console.WriteLine("Configuration saved.");
         return ExitCodes.Success;
@@ -237,7 +257,7 @@ public static class Program
         Console.WriteLine("  connect");
         Console.WriteLine("  disconnect");
         Console.WriteLine("  toggle");
-        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>]");
+        Console.WriteLine("  configure --host <h> --port <p> [--tls|--no-tls] [--token <t>] [--display-name <n>] [--tls-fingerprint <sha256>] [--relay-port <p>] [--control-ui <url>] [--dark-theme|--light-theme] [--tray-notifications|--no-tray-notifications]");
         Console.WriteLine("  install");
         Console.WriteLine("  uninstall");
         Console.WriteLine("  logs --tail [--lines N]");
