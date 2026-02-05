@@ -24,6 +24,7 @@
                         <TextBlock x:Name="StatusLabel" FontSize="20" FontWeight="Bold" Text="DISCONNECTED" />
                         <TextBlock x:Name="StatusDetails" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="No status yet." />
                         <TextBlock x:Name="StatusError" Margin="0,4,0,0" Foreground="{DynamicResource StatusErrorBrush}" Text="" />
+                        <TextBlock x:Name="LastActionText" Margin="0,4,0,0" Foreground="{DynamicResource TextSecondaryBrush}" Text="" />
                         <StackPanel x:Name="BusyPanel" Margin="0,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
                             <ProgressBar Width="140" Height="10" IsIndeterminate="True" Margin="0,0,8,0" />
                             <TextBlock x:Name="BusyText" VerticalAlignment="Center" />
@@ -58,6 +59,18 @@
                             Margin="12,0,0,0"
                             Width="140"
                             Click="OpenControlUiButton_Click">Open Control UI</Button>
+                </DockPanel>
+            </Border>
+
+            <Border x:Name="GatewayBanner" Margin="0,10,0,0" Padding="10" Background="{DynamicResource WarningBannerBackgroundBrush}" BorderBrush="{DynamicResource WarningBannerBorderBrush}" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+                <DockPanel>
+                    <TextBlock Text="Gateway unreachable. Check network/Tailscale and verify gateway settings."
+                               VerticalAlignment="Center" />
+                    <Button x:Name="GatewayBannerTestButton"
+                            DockPanel.Dock="Right"
+                            Margin="12,0,0,0"
+                            Width="140"
+                            Click="TestGatewayButton_Click">Test Gateway</Button>
                 </DockPanel>
             </Border>
         </StackPanel>
@@ -195,10 +208,13 @@
                     <TextBlock Text="App logs and node host logs are stored locally." Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal">
                         <Button Width="140" Margin="0,0,8,0" Click="OpenLogsButton_Click">Open Logs Folder</Button>
+                        <Button Width="130" Margin="0,0,8,0" Click="OpenAppLogButton_Click">Open App Log</Button>
                         <Button Width="140" Margin="0,0,8,0" Click="OpenNodeLogButton_Click">Open Node Log</Button>
-                        <Button Width="160" Click="ExportDiagnosticsButton_Click">Export Diagnostics</Button>
+                        <Button Width="160" Margin="0,0,8,0" Click="ExportDiagnosticsButton_Click">Export Diagnostics</Button>
+                        <Button Width="170" Click="CopyDiagnosticsPathButton_Click">Copy Diagnostics Path</Button>
                     </StackPanel>
                     <TextBlock x:Name="DiagnosticsStatus" Margin="0,8,0,0" />
+                    <TextBlock x:Name="LogsLastErrorText" Margin="0,4,0,0" Foreground="{DynamicResource StatusErrorBrush}" Text="" />
                     <GroupBox Header="Node Host Output" Margin="0,12,0,0">
                         <StackPanel Margin="8">
                             <StackPanel Orientation="Horizontal">

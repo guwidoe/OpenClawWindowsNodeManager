@@ -17,6 +17,7 @@ public partial class MainWindow : Window
 {
     private const string DefaultSshCommand = "/home/qido/.local/share/fnm/fnm exec --using 22 -- openclaw dashboard --no-open";
     private NodeStatus? _lastStatus;
+    private string? _lastDiagnosticsPath;
 
     public MainWindow()
     {
@@ -51,6 +52,7 @@ public partial class MainWindow : Window
 
             StatusDetails.Text = details;
             StatusError.Text = status.LastError ?? string.Empty;
+            LogsLastErrorText.Text = status.LastError ?? string.Empty;
             UpdateTokenBanner(status);
             UpdateTokenStatus();
         });
@@ -238,6 +240,22 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OpenAppLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!File.Exists(AppPaths.AppLogPath))
+        {
+            WpfMessageBox.Show("App log not found yet.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "notepad.exe",
+            Arguments = AppPaths.AppLogPath,
+            UseShellExecute = true
+        });
+    }
+
     private void OpenNodeLogButton_Click(object sender, RoutedEventArgs e)
     {
         if (!File.Exists(AppPaths.NodeLogPath))
@@ -307,6 +325,10 @@ public partial class MainWindow : Window
         PairingBanner.Visibility = status.Issue == NodeIssue.PairingRequired
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        GatewayBanner.Visibility = status.Issue == NodeIssue.GatewayUnreachable
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     public void SetBusy(bool isBusy, string? title, string? detail)
@@ -337,6 +359,14 @@ public partial class MainWindow : Window
             {
                 UpdateStatus(_lastStatus);
             }
+        });
+    }
+
+    public void SetLastAction(string message)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            LastActionText.Text = message;
         });
     }
 
@@ -414,6 +444,32 @@ public partial class MainWindow : Window
                 GatewayToken = "<redacted>"
             };
 
+            var summaryEntry = archive.CreateEntry("summary.txt");
+            await using (var writer = new StreamWriter(summaryEntry.Open()))
+            {
+                var version = typeof(App).Assembly.GetName().Version?.ToString() ?? "unknown";
+                await writer.WriteLineAsync($"OpenClaw Windows Companion diagnostics");
+                await writer.WriteLineAsync($"Version: {version}");
+                await writer.WriteLineAsync($"Exported: {DateTimeOffset.Now:O}");
+                await writer.WriteLineAsync();
+                await writer.WriteLineAsync($"State: {status.ToConnectionState()}");
+                await writer.WriteLineAsync($"Running: {status.IsRunning}");
+                await writer.WriteLineAsync($"Connected: {status.IsConnected}");
+                await writer.WriteLineAsync($"Gateway: {status.GatewayHost}:{status.GatewayPort}");
+                if (!string.IsNullOrWhiteSpace(status.LastError))
+                {
+                    await writer.WriteLineAsync($"LastError: {status.LastError}");
+                }
+
+                await writer.WriteLineAsync();
+                await writer.WriteLineAsync("Included files:");
+                await writer.WriteLineAsync("- config.json");
+                await writer.WriteLineAsync("- status.json");
+                await writer.WriteLineAsync("- app.log");
+                await writer.WriteLineAsync("- node.log");
+                await writer.WriteLineAsync("- node-host.log");
+            }
+
             var configEntry = archive.CreateEntry("config.json");
             await using (var writer = new StreamWriter(configEntry.Open()))
             {
@@ -431,6 +487,7 @@ public partial class MainWindow : Window
             AddLogToArchive(archive, AppPaths.NodeHostLogPath, "node-host.log");
         }
 
+        _lastDiagnosticsPath = zipPath;
         DiagnosticsStatus.Text = $"Diagnostics exported to {zipPath}";
     }
 
@@ -466,6 +523,18 @@ public partial class MainWindow : Window
         {
             NodeHostLogTextBox.Text = $"Failed to read node host log: {ex.Message}";
         }
+    }
+
+    private void CopyDiagnosticsPathButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_lastDiagnosticsPath))
+        {
+            WpfMessageBox.Show("Export diagnostics first to copy the path.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        Clipboard.SetText(_lastDiagnosticsPath);
+        WpfMessageBox.Show("Diagnostics path copied to clipboard.", "OpenClaw", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async void FetchTokenButton_Click(object sender, RoutedEventArgs e)

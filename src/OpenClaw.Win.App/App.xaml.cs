@@ -123,12 +123,12 @@ public partial class App : System.Windows.Application
 
     public Task<NodeStatus> ConnectAsync()
     {
-        return RunWithBusyAsync("Connecting...", progress => NodeService.ConnectAsync(progress: progress));
+        return RunWithBusyAsync("Connecting...", "Connect", progress => NodeService.ConnectAsync(progress: progress));
     }
 
     public Task<NodeStatus> DisconnectAsync()
     {
-        return RunWithBusyAsync("Disconnecting...", progress => NodeService.DisconnectAsync(progress: progress));
+        return RunWithBusyAsync("Disconnecting...", "Disconnect", progress => NodeService.DisconnectAsync(progress: progress));
     }
 
     private Task ConnectFromTrayAsync() => ConnectAsync();
@@ -205,7 +205,7 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private async Task<NodeStatus> RunWithBusyAsync(string message, Func<IProgress<string>, Task<NodeStatus>> action)
+    private async Task<NodeStatus> RunWithBusyAsync(string message, string actionLabel, Func<IProgress<string>, Task<NodeStatus>> action)
     {
         if (_isBusy)
         {
@@ -253,6 +253,7 @@ public partial class App : System.Windows.Application
         _lastStatus = status;
         _trayIcon?.UpdateStatus(status);
         _mainWindow?.UpdateStatus(status);
+        UpdateLastAction(actionLabel, status);
         return status;
     }
 
@@ -270,6 +271,23 @@ public partial class App : System.Windows.Application
     public void UpdateTrayNotifications(bool enabled)
     {
         _trayIcon?.SetNotificationsEnabled(enabled);
+    }
+
+    private void UpdateLastAction(string actionLabel, NodeStatus status)
+    {
+        var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var success = actionLabel.Equals("Connect", StringComparison.OrdinalIgnoreCase)
+            ? status.IsRunning && status.IsConnected
+            : !status.IsRunning;
+
+        var result = success ? "succeeded" : "failed";
+        var message = $"Last action: {actionLabel} {result} at {timestamp}";
+        if (!success && !string.IsNullOrWhiteSpace(status.LastError))
+        {
+            message += $" ({status.LastError})";
+        }
+
+        _mainWindow?.SetLastAction(message);
     }
 
     private string FormatBusyDetail(string message, int step)
