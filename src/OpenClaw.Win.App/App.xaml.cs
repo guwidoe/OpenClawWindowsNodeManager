@@ -17,6 +17,7 @@ public partial class App : System.Windows.Application
     private DispatcherTimer? _pollTimer;
     private readonly SemaphoreSlim _statusLock = new(1, 1);
     private NodeStatus? _lastStatus;
+    private bool _isBusy;
 
     public ConfigStore ConfigStore { get; private set; } = null!;
     public TokenStore TokenStore { get; private set; } = null!;
@@ -100,30 +101,30 @@ public partial class App : System.Windows.Application
         _ = RefreshStatusAsync();
     }
 
-    private async Task ConnectFromTrayAsync()
+    public Task<NodeStatus> ConnectAsync()
     {
-        var status = await NodeService.ConnectAsync();
-        _trayIcon?.UpdateStatus(status);
-        _mainWindow?.UpdateStatus(status);
+        return RunWithBusyAsync("Connecting...", () => NodeService.ConnectAsync());
     }
 
-    private async Task DisconnectFromTrayAsync()
+    public Task<NodeStatus> DisconnectAsync()
     {
-        var status = await NodeService.DisconnectAsync();
-        _trayIcon?.UpdateStatus(status);
-        _mainWindow?.UpdateStatus(status);
+        return RunWithBusyAsync("Disconnecting...", () => NodeService.DisconnectAsync());
     }
+
+    private Task ConnectFromTrayAsync() => ConnectAsync();
+
+    private Task DisconnectFromTrayAsync() => DisconnectAsync();
 
     private async Task ToggleFromTrayAsync()
     {
         var status = _lastStatus ?? await NodeService.GetStatusAsync();
         if (status.IsRunning)
         {
-            await DisconnectFromTrayAsync();
+            await DisconnectAsync();
         }
         else
         {
-            await ConnectFromTrayAsync();
+            await ConnectAsync();
         }
     }
 
@@ -181,6 +182,37 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             Log.Error("Failed to open control UI.", ex);
+        }
+    }
+
+    private async Task<NodeStatus> RunWithBusyAsync(string message, Func<Task<NodeStatus>> action)
+    {
+        if (_isBusy)
+        {
+            return _lastStatus ?? new NodeStatus();
+        }
+
+        _isBusy = true;
+        _trayIcon?.SetBusy(message);
+        _mainWindow?.SetBusy(true, message);
+
+        try
+        {
+            var status = await action().ConfigureAwait(false);
+            _lastStatus = status;
+            _trayIcon?.UpdateStatus(status);
+            _mainWindow?.UpdateStatus(status);
+            return status;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Operation failed.", ex);
+            return _lastStatus ?? new NodeStatus { Issue = NodeIssue.UnknownError, LastError = ex.Message };
+        }
+        finally
+        {
+            _isBusy = false;
+            _mainWindow?.SetBusy(false, null);
         }
     }
 

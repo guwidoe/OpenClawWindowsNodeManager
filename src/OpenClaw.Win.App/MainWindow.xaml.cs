@@ -15,6 +15,7 @@ namespace OpenClaw.Win.App;
 public partial class MainWindow : Window
 {
     private const string DefaultSshCommand = "/home/qido/.local/share/fnm/fnm exec --using 22 -- openclaw dashboard --no-open";
+    private NodeStatus? _lastStatus;
 
     public MainWindow()
     {
@@ -27,6 +28,7 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
+            _lastStatus = status;
             var state = status.ToConnectionState();
             StatusLabel.Text = state.ToString().ToUpperInvariant();
             StatusLabel.Foreground = state switch
@@ -49,6 +51,7 @@ public partial class MainWindow : Window
             StatusDetails.Text = details;
             StatusError.Text = status.LastError ?? string.Empty;
             UpdateTokenBanner(status);
+            UpdateTokenStatus();
         });
     }
 
@@ -133,14 +136,14 @@ public partial class MainWindow : Window
     private async void ConnectButton_Click(object sender, RoutedEventArgs e)
     {
         var app = (App)WpfApplication.Current;
-        var status = await app.NodeService.ConnectAsync();
+        var status = await app.ConnectAsync();
         UpdateStatus(status);
     }
 
     private async void DisconnectButton_Click(object sender, RoutedEventArgs e)
     {
         var app = (App)WpfApplication.Current;
-        var status = await app.NodeService.DisconnectAsync();
+        var status = await app.DisconnectAsync();
         UpdateStatus(status);
     }
 
@@ -252,6 +255,35 @@ public partial class MainWindow : Window
         PairingBanner.Visibility = status.Issue == NodeIssue.PairingRequired
             ? Visibility.Visible
             : Visibility.Collapsed;
+    }
+
+    public void SetBusy(bool isBusy, string? message)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            BusyPanel.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
+            BusyText.Text = message ?? string.Empty;
+
+            ConnectButton.IsEnabled = !isBusy;
+            DisconnectButton.IsEnabled = !isBusy;
+            RefreshButton.IsEnabled = !isBusy;
+            InstallButton.IsEnabled = !isBusy;
+            UninstallButton.IsEnabled = !isBusy;
+            StartButton.IsEnabled = !isBusy;
+            StopButton.IsEnabled = !isBusy;
+            FetchTokenButton.IsEnabled = !isBusy;
+
+            if (isBusy && !string.IsNullOrWhiteSpace(message))
+            {
+                StatusLabel.Text = message.ToUpperInvariant();
+                StatusLabel.Foreground = Brushes.DarkSlateBlue;
+                StatusError.Text = string.Empty;
+            }
+            else if (_lastStatus != null)
+            {
+                UpdateStatus(_lastStatus);
+            }
+        });
     }
 
     private void UpdateTokenStatus()

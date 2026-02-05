@@ -30,6 +30,7 @@ public sealed class NodeStatus
     public bool IsInstalled { get; set; }
     public bool IsRunning { get; set; }
     public bool IsConnected { get; set; }
+    public bool HasForegroundProcess { get; set; }
     public string? GatewayHost { get; set; }
     public int? GatewayPort { get; set; }
     public string? NodeId { get; set; }

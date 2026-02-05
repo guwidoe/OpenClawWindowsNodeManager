@@ -97,6 +97,20 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
+    public void SetBusy(string message)
+    {
+        var busyState = NodeConnectionState.Connecting;
+        _statusItem.Text = $"Status: {message}";
+        _notifyIcon.Text = $"OpenClaw: {message}";
+        _connectItem.Enabled = false;
+        _disconnectItem.Enabled = false;
+
+        if (_icons.TryGetValue(busyState, out var icon))
+        {
+            _notifyIcon.Icon = icon;
+        }
+    }
+
     public void Dispose()
     {
         _notifyIcon.Visible = false;

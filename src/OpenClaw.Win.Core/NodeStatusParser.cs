@@ -34,7 +34,7 @@ public static class NodeStatusParser
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            if (TryFindBool(root, out var installed, "installed", "serviceInstalled", "isInstalled"))
+            if (TryFindBool(root, out var installed, "installed", "serviceInstalled", "isInstalled", "loaded"))
             {
                 status.IsInstalled = installed;
             }
@@ -60,7 +60,7 @@ public static class NodeStatusParser
                 {
                     status.IsRunning = true;
                 }
-                if (lowered.Contains("stopped") || lowered.Contains("offline") || lowered.Contains("disconnected"))
+                if (lowered.Contains("stopped") || lowered.Contains("ready") || lowered.Contains("offline") || lowered.Contains("disconnected"))
                 {
                     status.IsRunning = false;
                 }

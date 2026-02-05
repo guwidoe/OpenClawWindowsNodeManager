@@ -83,6 +83,13 @@ public sealed class NodeService
         var parsed = NodeStatusParser.Parse(json, json == null ? combined : null);
         MergeStatus(status, parsed);
 
+        var foregroundIds = NodeProcessManager.FindForegroundNodeProcessIds();
+        if (foregroundIds.Count > 0)
+        {
+            status.HasForegroundProcess = true;
+            status.IsRunning = true;
+        }
+
         if (status.IsRunning && !status.IsConnected && !string.IsNullOrWhiteSpace(gatewayHost))
         {
             var probe = await CheckConnectedViaGatewayAsync(cliPath, gatewayHost, gatewayPort, gatewayUseTls, identity, cancellationToken).ConfigureAwait(false);
@@ -101,6 +108,12 @@ public sealed class NodeService
                 status.Issue = NodeIssue.TokenMissing;
                 status.LastError ??= "Gateway token required to verify connection.";
             }
+        }
+
+        if (!status.IsRunning && (status.Issue == NodeIssue.PairingRequired || status.Issue == NodeIssue.TokenInvalid))
+        {
+            status.Issue = NodeIssue.None;
+            status.LastError = null;
         }
 
         if (result.ExitCode != 0 && status.Issue == NodeIssue.None)
@@ -166,7 +179,15 @@ public sealed class NodeService
         await RunOpenClawAsync(cliPath, "node stop --json", cancellationToken).ConfigureAwait(false);
 
         var waitTimeout = timeout ?? TimeSpan.FromSeconds(20);
-        return await WaitForStoppedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+        var status = await WaitForStoppedAsync(waitTimeout, cancellationToken).ConfigureAwait(false);
+
+        var killed = NodeProcessManager.KillForegroundNodeProcesses();
+        if (killed > 0)
+        {
+            Log.Warn($"Stopped {killed} foreground OpenClaw node process(es).");
+        }
+
+        return status;
     }
 
     public async Task<ProcessResult> InstallAsync(CancellationToken cancellationToken = default)
