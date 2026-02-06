@@ -7,7 +7,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         Title="OpenClaw Windows Companion" Height="560" Width="820" MinHeight="520" MinWidth="760"
-        Icon="Assets/lobster.ico"
+        Icon="pack://application:,,,/Assets/lobster.ico"
         Background="{DynamicResource WindowBackgroundBrush}">
     <Grid Margin="16" Background="{DynamicResource WindowBackgroundBrush}">
         <Grid.RowDefinitions>

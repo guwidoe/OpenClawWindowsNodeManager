@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\\lobster.png" />
-    <Content Include="Assets\\lobster.ico" />
+    <Resource Include="Assets\\lobster.ico" />
     <Content Include="Assets\\lobster.svg" />
   </ItemGroup>
 
