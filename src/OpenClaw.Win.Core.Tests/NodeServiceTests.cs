@@ -48,7 +48,7 @@ public class NodeServiceTests
         await service.ConnectAsync(TimeSpan.Zero);
 
         Assert.Equal(1, nodeHostRunner.StartCalls);
-        Assert.Equal("node run", nodeHostRunner.LastRunArgs);
+        Assert.Equal("node run --host gw.local --port 443 --tls --display-name NODE-A", nodeHostRunner.LastRunArgs);
         Assert.Equal("token-123", nodeHostRunner.LastToken);
     }
 

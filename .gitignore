@@ -1,6 +1,7 @@
 ﻿# Build outputs
 **/bin/
 **/obj/
+artifacts/
 
 # Visual Studio
 .vs/
