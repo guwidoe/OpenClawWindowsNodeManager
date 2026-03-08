@@ -52,7 +52,8 @@ jobs:
 
           if ($before -and $before -ne '0000000000000000000000000000000000000000') {
             $oldXml = git show "$before`:Directory.Build.props" 2>$null
-            if ($LASTEXITCODE -eq 0 -and $oldXml) {
+            $gitExitCode = $LASTEXITCODE
+            if ($gitExitCode -eq 0 -and $oldXml) {
               [xml]$oldProps = $oldXml
               $oldVersion = $oldProps.Project.PropertyGroup.Version | Select-Object -First 1
               if ($oldVersion) {
@@ -66,6 +67,7 @@ jobs:
 
           "changed=$changed" >> $env:GITHUB_OUTPUT
           Write-Host "Version changed: $changed"
+          $global:LASTEXITCODE = 0
 
       - name: Restore dependencies
         if: github.event_name == 'workflow_dispatch' || steps.bump.outputs.changed == 'true'
@@ -90,7 +92,9 @@ jobs:
         run: |
           $tag = '${{ steps.version.outputs.tag }}'
           gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
+          $ghExitCode = $LASTEXITCODE
+
+          if ($ghExitCode -eq 0) {
             "exists=true" >> $env:GITHUB_OUTPUT
             Write-Host "Release $tag already exists"
           }
@@ -98,6 +102,8 @@ jobs:
             "exists=false" >> $env:GITHUB_OUTPUT
             Write-Host "Release $tag does not exist yet"
           }
+
+          $global:LASTEXITCODE = 0
 
       - name: Create GitHub release
         if: (github.event_name == 'workflow_dispatch' || steps.bump.outputs.changed == 'true') && steps.release_exists.outputs.exists != 'true'
