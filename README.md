@@ -2,6 +2,22 @@
 
 A native Windows companion for running an OpenClaw **node host** with a friendly tray experience and a scriptable CLI. The app wraps the upstream `openclaw` CLI (it does not replace it).
 
+## UI Gallery
+
+> Screenshots below use a demo state/config in dark mode, so the UI can be previewed without a live gateway.
+
+| Connection | Node Host |
+| --- | --- |
+| ![Connection tab](docs/images/ui-connection-dark.png) | ![Node Host tab](docs/images/ui-node-host-dark.png) |
+
+| Canvas | Approvals |
+| --- | --- |
+| ![Canvas tab](docs/images/ui-canvas-dark.png) | ![Approvals tab](docs/images/ui-approvals-dark.png) |
+
+| Chrome Relay | Logs |
+| --- | --- |
+| ![Chrome Relay tab](docs/images/ui-chrome-relay-dark.png) | ![Logs tab](docs/images/ui-logs-dark.png) |
+
 ## Features
 
 ### System Tray
@@ -58,6 +74,9 @@ openclaw-win disconnect
 openclaw-win toggle
 openclaw-win logs --tail --lines 200
 openclaw-win doctor
+openclaw-win ui show
+openclaw-win ui show --tab approvals
+openclaw-win ui tabs
 ```
 
 Exit codes:
@@ -87,6 +106,16 @@ dotnet build OpenClawWindowsNodeManager.sln -c Release
 ## Run
 - Tray app: `src/OpenClaw.Win.App/bin/Release/net8.0-windows/OpenClaw.Win.App.exe`
 - CLI: `src/OpenClaw.Win.Cli/bin/Release/net8.0-windows/openclaw-win.exe`
+
+### Open the UI from the CLI
+- `openclaw-win ui show` — open the settings window
+- `openclaw-win ui show --tab connection`
+- `openclaw-win ui show --tab node-host`
+- `openclaw-win ui show --tab canvas`
+- `openclaw-win ui show --tab approvals`
+- `openclaw-win ui show --tab chrome-relay`
+- `openclaw-win ui show --tab logs`
+- `openclaw-win ui tabs` — list supported tab names
 
 ## Settings & Data Locations
 The companion stores data under:

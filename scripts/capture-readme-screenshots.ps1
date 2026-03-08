@@ -79,7 +79,7 @@ function Initialize-DemoState {
   "pollIntervalSeconds": 5,
   "autoStartTray": false,
   "captureNodeHostOutput": true,
-  "themePreference": "light",
+  "themePreference": "dark",
   "enableTrayNotifications": false,
   "enableSystemNotifications": false,
   "execApprovalPolicy": "prompt",
@@ -198,6 +198,44 @@ function Capture-Window {
     $bitmap.Dispose()
 }
 
+function Start-DemoRelayServer {
+    param([int]$Port)
+
+    return Start-Job -ArgumentList $Port -ScriptBlock {
+        param($Port)
+
+        $listener = [System.Net.Sockets.TcpListener]::Create($Port)
+        $listener.Start()
+
+        try {
+            while ($true) {
+                $client = $listener.AcceptTcpClient()
+                try {
+                    $stream = $client.GetStream()
+                    $reader = New-Object System.IO.StreamReader($stream)
+                    while ($true) {
+                        $line = $reader.ReadLine()
+                        if ($null -eq $line -or $line.Length -eq 0) {
+                            break
+                        }
+                    }
+
+                    $response = "HTTP/1.1 200 OK`r`nContent-Type: text/plain`r`nContent-Length: 2`r`nConnection: close`r`n`r`nOK"
+                    $buffer = [System.Text.Encoding]::ASCII.GetBytes($response)
+                    $stream.Write($buffer, 0, $buffer.Length)
+                    $stream.Flush()
+                }
+                finally {
+                    $client.Close()
+                }
+            }
+        }
+        finally {
+            $listener.Stop()
+        }
+    }
+}
+
 function Stop-UiProcesses {
     Get-Process OpenClaw.Win.App -ErrorAction SilentlyContinue | Stop-Process -Force
 }
@@ -238,6 +276,7 @@ $originalStateDir = $env:OPENCLAW_COMPANION_STATE_DIR
 $originalAppPath = $env:OPENCLAW_APP_PATH
 $originalCliPath = $env:OPENCLAW_CLI_PATH
 $originalPath = $env:PATH
+$relayJob = $null
 
 try {
     $env:OPENCLAW_COMPANION_STATE_DIR = $stateDir
@@ -246,11 +285,16 @@ try {
     $env:PATH = "$fakeCliDir;$originalPath"
 
     [void](& $cliExe configure --token 'demo-token-for-readme')
+    $relayJob = Start-DemoRelayServer -Port 18792
+    Start-Sleep -Milliseconds 500
 
     $captures = @(
-        @{ Tab = 'connection'; File = 'ui-connection.png' },
-        @{ Tab = 'approvals'; File = 'ui-approvals.png' },
-        @{ Tab = 'logs'; File = 'ui-logs.png' }
+        @{ Tab = 'connection'; File = 'ui-connection-dark.png'; DelayMilliseconds = 1000 },
+        @{ Tab = 'node-host'; File = 'ui-node-host-dark.png'; DelayMilliseconds = 1000 },
+        @{ Tab = 'canvas'; File = 'ui-canvas-dark.png'; DelayMilliseconds = 2500 },
+        @{ Tab = 'approvals'; File = 'ui-approvals-dark.png'; DelayMilliseconds = 1000 },
+        @{ Tab = 'chrome-relay'; File = 'ui-chrome-relay-dark.png'; DelayMilliseconds = 1200 },
+        @{ Tab = 'logs'; File = 'ui-logs-dark.png'; DelayMilliseconds = 1000 }
     )
 
     foreach ($capture in $captures) {
@@ -259,6 +303,7 @@ try {
         Start-Sleep -Milliseconds 750
         $process = Get-Process OpenClaw.Win.App -ErrorAction Stop | Sort-Object StartTime -Descending | Select-Object -First 1
         $handle = Wait-ForMainWindow -Process $process
+        Start-Sleep -Milliseconds $capture.DelayMilliseconds
         $targetPath = Join-Path $OutputDir $capture.File
         Capture-Window -Handle $handle -Path $targetPath
         Stop-UiProcesses
@@ -269,6 +314,10 @@ finally {
     $env:OPENCLAW_APP_PATH = $originalAppPath
     $env:OPENCLAW_CLI_PATH = $originalCliPath
     $env:PATH = $originalPath
+    if ($null -ne $relayJob) {
+        Stop-Job $relayJob -ErrorAction SilentlyContinue
+        Remove-Job $relayJob -ErrorAction SilentlyContinue
+    }
     Stop-UiProcesses
 }
 
