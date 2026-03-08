@@ -31,6 +31,22 @@ public partial class MainWindow : Window
         ThemeManager.ApplyTitleBar(this, ((App)WpfApplication.Current).ConfigStore.Load().ThemePreference);
     }
 
+    public void NavigateToTab(CompanionTab tab)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            foreach (var item in MainTabs.Items.OfType<TabItem>())
+            {
+                var header = item.Header?.ToString();
+                if (string.Equals(header, CompanionTabNames.ToDisplayName(tab), StringComparison.OrdinalIgnoreCase))
+                {
+                    MainTabs.SelectedItem = item;
+                    return;
+                }
+            }
+        });
+    }
+
     public void UpdateStatus(NodeStatus status)
     {
         Dispatcher.Invoke(() =>

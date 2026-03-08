@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -38,6 +39,7 @@ public static class Program
                 "uninstall" => await HandleUninstallAsync(nodeService),
                 "logs" => HandleLogs(options),
                 "doctor" => await HandleDoctorAsync(nodeService, configStore, tokenStore, locator),
+                "ui" => HandleUi(options),
                 _ => UnknownCommand(command)
             };
         }
@@ -270,6 +272,73 @@ public static class Program
         return MapExitCode(status);
     }
 
+    private static int HandleUi(string[] args)
+    {
+        if (!UiCommandParser.TryParse(args, out var options, out var error))
+        {
+            Console.Error.WriteLine(error);
+            PrintUiHelp();
+            return ExitCodes.GenericFailure;
+        }
+
+        if (options.ListTabs)
+        {
+            foreach (var supportedTab in CompanionTabNames.All)
+            {
+                Console.WriteLine($"- {CompanionTabNames.ToArgument(supportedTab)} ({CompanionTabNames.ToDisplayName(supportedTab)})");
+            }
+
+            return ExitCodes.Success;
+        }
+
+        var appPath = FindAppPath();
+        if (appPath == null)
+        {
+            Console.Error.WriteLine("OpenClaw.Win.App.exe not found. Build the app or set OPENCLAW_APP_PATH.");
+            return ExitCodes.GenericFailure;
+        }
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = appPath,
+            UseShellExecute = true,
+            WorkingDirectory = Path.GetDirectoryName(appPath) ?? AppContext.BaseDirectory
+        };
+
+        foreach (var arg in options.LaunchRequest.ToAppArguments())
+        {
+            startInfo.ArgumentList.Add(arg);
+        }
+
+        Process.Start(startInfo);
+        var target = options.LaunchRequest.Tab is { } tab
+            ? $" ({CompanionTabNames.ToDisplayName(tab)})"
+            : string.Empty;
+        Console.WriteLine($"Opened OpenClaw UI{target}.");
+        return ExitCodes.Success;
+    }
+
+    private static string? FindAppPath()
+    {
+        var envOverride = Environment.GetEnvironmentVariable("OPENCLAW_APP_PATH");
+        if (!string.IsNullOrWhiteSpace(envOverride) && File.Exists(envOverride))
+        {
+            return envOverride;
+        }
+
+        var baseDir = AppContext.BaseDirectory;
+        var candidates = new[]
+        {
+            Path.Combine(baseDir, "OpenClaw.Win.App.exe"),
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "OpenClaw.Win.App", "release", "OpenClaw.Win.App.exe")),
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "OpenClaw.Win.App", "debug", "OpenClaw.Win.App.exe")),
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "src", "OpenClaw.Win.App", "bin", "Release", "net8.0-windows", "OpenClaw.Win.App.exe")),
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "src", "OpenClaw.Win.App", "bin", "Debug", "net8.0-windows", "OpenClaw.Win.App.exe"))
+        };
+
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
     private static int UnknownCommand(string command)
     {
         Console.Error.WriteLine($"Unknown command: {command}");
@@ -290,6 +359,16 @@ public static class Program
         Console.WriteLine("  uninstall");
         Console.WriteLine("  logs --tail [--lines N]");
         Console.WriteLine("  doctor");
+        Console.WriteLine("  ui show [--tab <connection|node-host|canvas|approvals|chrome-relay|logs>]");
+        Console.WriteLine("  ui tabs");
+    }
+
+    private static void PrintUiHelp()
+    {
+        Console.WriteLine("UI commands:");
+        Console.WriteLine("  ui show");
+        Console.WriteLine("  ui show --tab <tab>");
+        Console.WriteLine("  ui tabs");
     }
 
     private static void PrintStatus(NodeStatus status)

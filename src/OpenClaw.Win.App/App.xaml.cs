@@ -42,6 +42,8 @@ public partial class App : System.Windows.Application
     {
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+        var launchRequest = CompanionUiLaunchRequest.ParseAppArguments(e.Args);
+
         ConfigStore = new ConfigStore();
         TokenStore = new TokenStore();
         CliLocator = new OpenClawCliLocator();
@@ -84,6 +86,16 @@ public partial class App : System.Windows.Application
         ExecApprovalService.HistoryChanged += (_, _) => NotifyApprovalHistoryChange();
 
         StartPolling(config.PollIntervalSeconds);
+
+        if (launchRequest.Tab.HasValue)
+        {
+            _mainWindow.NavigateToTab(launchRequest.Tab.Value);
+        }
+
+        if (launchRequest.ShowSettings)
+        {
+            ShowSettings();
+        }
     }
 
     private void OnExit(object sender, ExitEventArgs e)
