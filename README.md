@@ -103,6 +103,12 @@ Exit codes:
 dotnet build OpenClawWindowsNodeManager.sln -c Release
 ```
 
+## Releases
+- Version is managed in `Directory.Build.props` via `<Version>`.
+- Pushing a commit to `main` that changes `<Version>` triggers `.github/workflows/release.yml`.
+- The workflow runs the gate, builds a `win-x64` package, and creates/updates the matching GitHub release.
+- You can also run the release workflow manually with **Actions → Release → Run workflow**.
+
 ## Run
 - Tray app: `src/OpenClaw.Win.App/bin/Release/net8.0-windows/OpenClaw.Win.App.exe`
 - CLI: `src/OpenClaw.Win.Cli/bin/Release/net8.0-windows/openclaw-win.exe`
