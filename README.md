@@ -92,6 +92,7 @@ Exit codes:
 - `src/OpenClaw.Win.Core` — Core services (config, token storage, node status, gateway tests)
 - `src/OpenClaw.Win.Cli` — CLI entry (`openclaw-win.exe`)
 - `src/OpenClaw.Win.App` — WPF tray app and settings UI
+- `src/OpenClaw.Win.Core.Tests` — unit tests
 
 ## Prerequisites
 - Windows 10/11
