@@ -1,6 +1,6 @@
 # AGENTS.md
 
-@C:/Repositories/vibe-setup/AGENTS.windows.md
+@C:/Repos/Personal/vibe-setup/AGENTS.windows.md
 
 ## Project: OpenClaw Windows Node Companion
 
